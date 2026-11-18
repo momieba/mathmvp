@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { sendEmailOtp, signInWithGoogle, verifyEmailOtp } from './api'
 import { useAuth } from './AuthProvider'
+import { AUTH_ENABLED } from './config'
 
 type Step = 'email' | 'code'
 
@@ -18,7 +19,8 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  if (session) return <Navigate to="/app" replace />
+  // Login disabled (AUTH_ENABLED = false): the app signs in anonymously, the login page is not needed.
+  if (session || !AUTH_ENABLED) return <Navigate to="/app" replace />
 
   async function run(action: () => Promise<{ error: Error | null }>, onSuccess?: () => void) {
     setBusy(true)

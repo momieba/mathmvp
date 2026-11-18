@@ -3,6 +3,7 @@ import { SiteFooter } from '@/components/layout/SiteFooter'
 import { Formula } from '@/components/math/Formula'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { signOut } from '@/features/auth/api'
+import { AUTH_ENABLED } from '@/features/auth/config'
 import { schoolTypeLabels, stateLabels } from '@/features/curriculum/labels'
 import { useProfile } from '@/features/profile/api'
 
@@ -19,9 +20,11 @@ export function HomePage() {
             <Link to="/profil" className={buttonVariants({ variant: 'ghost' })}>
               Profil
             </Link>
-            <Button variant="ghost" onClick={() => void signOut()}>
-              Abmelden
-            </Button>
+            {AUTH_ENABLED && (
+              <Button variant="ghost" onClick={() => void signOut()}>
+                Abmelden
+              </Button>
+            )}
           </div>
         </header>
         {profile?.state && profile.school_type && (

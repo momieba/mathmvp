@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import { AUTH_ENABLED } from '@/features/auth/config'
 import { MemoryRouter } from 'react-router'
 import { landingJsonLd, renderLanding } from '@/prerender/entry'
 import { faq } from './content'
@@ -17,10 +18,10 @@ describe('LandingPage', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/deinem Lehrplan/)
   })
 
-  it('links every primary CTA to the login', () => {
+  it('links every primary CTA to the app entry (login or, while auth is off, the app)', () => {
     const ctas = screen.getAllByRole('link', { name: 'Kostenlos starten' })
     expect(ctas.length).toBeGreaterThan(0)
-    ctas.forEach((a) => expect(a).toHaveAttribute('href', '/login'))
+    ctas.forEach((a) => expect(a).toHaveAttribute('href', AUTH_ENABLED ? '/login' : '/app'))
   })
 
   it('links the legal pages in the footer', () => {

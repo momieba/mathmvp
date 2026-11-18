@@ -2,6 +2,7 @@ import { Clapperboard, Footprints, Layers, MapPinned, ShieldCheck, Check } from 
 import { Link } from 'react-router'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { buttonVariants } from '@/components/ui/button'
+import { AUTH_ENABLED } from '@/features/auth/config'
 import { cn } from '@/lib/utils'
 import { faq, features, parentPoints, site, steps } from './content'
 import { ExercisePreview } from './ExercisePreview'
@@ -16,6 +17,9 @@ const icons = {
   video: Clapperboard,
   shield: ShieldCheck,
 } as const
+
+/** Login is temporarily disabled (anonymous sign-in inside the app) → CTAs go straight to /app. */
+const appEntry = AUTH_ENABLED ? '/login' : '/app'
 
 const cta = cn(buttonVariants({ size: 'lg' }), 'h-11 px-5 text-base')
 const ctaSecondary = cn(buttonVariants({ size: 'lg', variant: 'outline' }), 'h-11 px-5 text-base')
@@ -55,8 +59,8 @@ export function LandingPage() {
             >
               FAQ
             </a>
-            <Link to="/login" className={buttonVariants({ variant: 'outline' })}>
-              Anmelden
+            <Link to={appEntry} className={buttonVariants({ variant: 'outline' })}>
+              {AUTH_ENABLED ? 'Anmelden' : 'Zur App'}
             </Link>
           </nav>
         </div>
@@ -83,7 +87,7 @@ export function LandingPage() {
                 wenn du nicht weiterkommst: der Lösungsweg, Schritt für Schritt.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link to="/login" className={cta}>
+                <Link to={appEntry} className={cta}>
                   Kostenlos starten
                 </Link>
                 <a href="#so-gehts" className={ctaSecondary}>
@@ -229,7 +233,7 @@ export function LandingPage() {
             <p className="text-muted-foreground mt-4 text-lg">
               Konto anlegen dauert eine Minute – kostenlos und ohne Passwort.
             </p>
-            <Link to="/login" className={cn(cta, 'mt-8')}>
+            <Link to={appEntry} className={cn(cta, 'mt-8')}>
               Kostenlos starten
             </Link>
           </div>
