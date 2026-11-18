@@ -30,6 +30,18 @@ export const schoolTypeLabels: Record<SchoolType, string> = {
   stadtteilschule: 'Stadtteilschule',
 }
 
+/** Shown first in school type selects (most common nationwide). */
+export const commonSchoolTypes = [
+  'gymnasium',
+  'realschule',
+  'hauptschule',
+] as const satisfies readonly SchoolType[]
+
+/** All remaining school types, alphabetically by label – listed below the common ones. */
+export const otherSchoolTypes = (Object.keys(schoolTypeLabels) as SchoolType[])
+  .filter((t) => !(commonSchoolTypes as readonly SchoolType[]).includes(t))
+  .sort((a, b) => schoolTypeLabels[a].localeCompare(schoolTypeLabels[b], 'de'))
+
 export const grades = [5, 6, 7, 8, 9, 10, 11, 12, 13] as const
 
 /** Entries sorted by German label, for select inputs. */

@@ -5,7 +5,7 @@
     {
       "state": "NW",
       "schoolType": "gymnasium",
-      "grade": 8
+      "grade": 9
     }
   ],
   "uniqueBy": "sort([a, b])",

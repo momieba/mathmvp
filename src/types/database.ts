@@ -39,6 +39,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      attempts: {
+        Row: {
+          answer: Json
+          correct: boolean
+          created_at: string
+          exercise_id: string
+          feedback: Json | null
+          id: string
+          subtopic_id: string
+          user_id: string
+        }
+        Insert: {
+          answer: Json
+          correct: boolean
+          created_at?: string
+          exercise_id: string
+          feedback?: Json | null
+          id?: string
+          subtopic_id: string
+          user_id: string
+        }
+        Update: {
+          answer?: Json
+          correct?: boolean
+          created_at?: string
+          exercise_id?: string
+          feedback?: Json | null
+          id?: string
+          subtopic_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attempts_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attempts_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "subtopics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercise_placements: {
         Row: {
           difficulty: Database["public"]["Enums"]["difficulty"]
@@ -197,6 +245,32 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      student_topics: {
+        Row: {
+          added_at: string
+          topic_id: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          topic_id: string
+          user_id?: string
+        }
+        Update: {
+          added_at?: string
+          topic_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_topics_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subtopic_placements: {
         Row: {
@@ -398,10 +472,51 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      my_recent_attempts: {
+        Row: {
+          correct: boolean | null
+          created_at: string | null
+          exercise_id: string | null
+          subtopic_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attempts_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attempts_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "subtopics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
-      [_ in never]: never
+      get_hint: {
+        Args: { p_exercise_id: string; p_index: number }
+        Returns: string
+      }
+      search_topics: {
+        Args: { p_query: string }
+        Returns: {
+          description: string
+          matched: string
+          score: number
+          slug: string
+          title: string
+          topic_id: string
+        }[]
+      }
+      submit_answer: {
+        Args: { p_answer: Json; p_exercise_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       content_status: "review" | "published" | "archived"

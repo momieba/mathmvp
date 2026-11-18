@@ -1,10 +1,25 @@
-import { grades, schoolTypeLabels, sortedEntries, stateLabels } from './labels'
+import {
+  commonSchoolTypes,
+  grades,
+  otherSchoolTypes,
+  schoolTypeLabels,
+  sortedEntries,
+  stateLabels,
+} from './labels'
 import { gradeSchema, schoolTypeSchema, stateSchema } from './schema'
 
 describe('curriculum labels', () => {
   it('label every state and school type', () => {
     expect(Object.keys(stateLabels).sort()).toEqual([...stateSchema.options].sort())
     expect(Object.keys(schoolTypeLabels).sort()).toEqual([...schoolTypeSchema.options].sort())
+  })
+
+  it('lists Gymnasium, Realschule, Hauptschule first and every other school type below', () => {
+    expect(commonSchoolTypes).toEqual(['gymnasium', 'realschule', 'hauptschule'])
+    expect([...commonSchoolTypes, ...otherSchoolTypes].sort()).toEqual(
+      [...schoolTypeSchema.options].sort(),
+    )
+    expect(otherSchoolTypes[0]).toBe('gesamtschule')
   })
 
   it('only offers valid grades', () => {

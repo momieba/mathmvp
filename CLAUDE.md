@@ -12,6 +12,7 @@ npx vitest run src/features/exercises/schema.test.ts   # einzelne Testdatei
 npm run typecheck && npm run lint && npm run format:check   # vor jedem Commit
 npm run drafts:validate [-- <datei|ordner>]   # Entwürfe gegen Zod-Schema prüfen
 npm run exercises:generate -- <vorlage.json> [--seed N] [--force]   # Aufgaben aus Vorlage erzeugen
+npm run content:import -- --curriculum | <aufgaben.json …> [--publish] [--dry-run]   # Entwürfe → Supabase (Service-Role-Key in .env.local)
 npm run db:new <name> | db:push | db:types    # Supabase, siehe Skill supabase-migration
 ```
 
@@ -24,7 +25,8 @@ npm run db:new <name> | db:push | db:types    # Supabase, siehe Skill supabase-m
 - Gemeinsame Inhalts-Enums in `src/features/content/enums.ts`.
 - Diagramme werden als Daten gespeichert (`diagramSchema`), nicht als Bilder.
 - Auth: Google OAuth + E-Mail-OTP (6-stelliger Code, PKCE). Kein Passwort-Login. **Aktuell deaktiviert** (`AUTH_ENABLED = false` in `src/features/auth/config.ts`): Beim Betreten von `/app`/`/profil` meldet `RequireAuth` anonym an (Supabase „anonymous sign-ins“ muss aktiv sein), Landing und Rechtsseiten lösen keine Anmeldung aus. Anonyme Nutzer haben die Rolle `authenticated` → RLS gilt unverändert. Rückbau: siehe `docs/TODO.md`.
-- Routen: öffentlich `/`, `/impressum`, `/datenschutz`, `/login`; mit Login `/profil` (Onboarding + Profil bearbeiten); mit Login **und** fertigem Profil `/app/*` (`RequireAuth` → `RequireProfile`).
+- Routen: öffentlich `/`, `/impressum`, `/datenschutz`, `/login`; mit Login `/profil` (Onboarding + Profil bearbeiten); mit Login **und** fertigem Profil `/app` (Dashboard: Themensuche, „Meine Themen“ mit Punkten) und `/app/ueben/:subtopicSlug` (Übungsseite) (`RequireAuth` → `RequireProfile`).
+- Lernen (`src/features/learning/`): Punkte pro Subthema werden **in der App** aus den letzten 15 Versuchen berechnet (`score.ts`, Regeln dort dokumentiert; View `my_recent_attempts`). Antworten prüft nur der Server (`submit_answer` – trägt den Versuch ein und gibt erst dann die Lösung zurück), Hinweise über `get_hint`. Aufgabenauswahl in `selectExercise.ts` (Schwierigkeit nach Punktestand, zuletzt gesehene vermeiden). Suche: `search_topics` (unaccent + `pg_trgm`, tolerant gegenüber Tippfehlern). Übungsseite kann bisher `numeric` und `multiple_choice`.
 - Prerender: `npm run build` rendert die Seiten aus `src/prerender/entry.tsx` (`pages`) per `scripts/prerender.ts` nach `dist/*.html` (hydratisiert in `main.tsx`, `cleanUrls` in `vercel.json`); alle anderen Routen bekommen die leere Shell `dist/spa.html` (`noindex`; Rewrite-Ziel wegen `cleanUrls` **`/spa`**, nicht `/spa.html` – sonst 404). Landing-Texte/FAQ in `src/features/landing/content.ts` (speist auch das JSON-LD).
 - DB-Schema (`supabase/migrations/`): `profiles` (1:1 zu `auth.users`, per Trigger angelegt; Nutzer dürfen per Spaltenrechten nur `display_name`, `state`, `school_type`, `grade`, `privacy_version` ändern – `role` nie), `topics` → `subtopics` → `subtopic_placements`, `exercises` → `exercise_placements`, `exercise_solutions`. **Antworten/Lösungen/Hinweise nur in `exercise_solutions`** (für Schüler nicht lesbar); `exercises.presentation` enthält nur, was die UI braucht. Prüfen/Aufdecken später über SECURITY-DEFINER-Funktionen. Admin-Check: `private.is_admin()` (Schema `private` ist nicht per API erreichbar).
 - DB-Enums müssen mit den Zod-Enums übereinstimmen – `src/features/content/enums.test.ts` prüft das zur Compile-Zeit (nach `npm run db:types`). Neues Enum → dort ergänzen.
@@ -40,8 +42,8 @@ exercise-author       → drafts/templates/*.json → exercises:generate → dra
                         (bevorzugt Vorlage + Generator; Handarbeit für handwritten/Begründungen/komplexe Sachaufgaben)
 create-math-video/-short → Videos aus dem Video-Plan (keyPoints)
 math-checker          → Bericht (FREIGEGEBEN / NICHT FREIGEGEBEN)
-Import-Script         → Supabase, status = 'review'   (noch nicht gebaut)
-Admin-Ansicht         → review → published → archived (noch nicht gebaut)
+content:import        → Supabase (erst --curriculum, dann Aufgaben; --publish nur nach FREIGEGEBEN)
+Admin-Ansicht         → review → published → archived (noch nicht gebaut – bis dahin direkt --publish)
 ```
 
 - Aufgaben werden nie gelöscht, nur archiviert (Schülerantworten referenzieren sie).
@@ -70,7 +72,7 @@ Admin-Ansicht         → review → published → archived (noch nicht gebaut)
 
 - TypeScript 7: `baseUrl` existiert nicht mehr – Pfad-Alias `@/*` nur über `paths`.
 - Kein Docker → kein lokales Supabase. Die Supabase CLI zielt standardmäßig auf **lokal** – für das Cloud-Projekt immer `--remote` (in `db:push`/`db:types` schon drin; auch bei `db query`, `db advisors`, `config push`). Agent-Läufe brauchen für Schreibzugriffe `--yes`, für reine Abfragen `--read-only`.
-- Nach jeder Migration: `npm run db:types` und `npx supabase db advisors --remote` (Ziel: keine Warnungen außer „Leaked Password Protection“, irrelevant ohne Passwort-Login).
+- Nach jeder Migration: `npm run db:types` und `npx supabase db advisors --remote` (erwartet und gewollt: „Leaked Password Protection“ – kein Passwort-Login; „authenticated can execute SECURITY DEFINER“ für `submit_answer`/`get_hint` – das sind die öffentlichen RPCs; „anonymous sign-ins“ – solange Login deaktiviert ist. Alles andere beheben).
 - `src/types/database.ts` ist generiert – nicht von Hand ändern.
 - Auth-Einstellungen (Site-URL, Redirects, OTP) liegen in `supabase/config.toml` → `npx supabase config push`. Vorher Diff lesen: Werte, die lokal nur Defaults sind, überschreiben sonst Remote-Einstellungen.
 - Free-Tier mit Standard-SMTP: nur ~2 Mails/h und **keine eigenen Mail-Templates** → Standard-Mail enthält nur den Link, keinen 6-stelligen Code. Code-Login erst mit eigenem SMTP (z.B. Resend) + Template `supabase/templates/magic_link.html` (in `config.toml` auskommentiert).

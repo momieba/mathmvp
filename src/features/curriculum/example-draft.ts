@@ -26,8 +26,9 @@ export const exampleCurriculumDraft = {
             {
               state: 'NW',
               schoolType: 'gymnasium',
-              grade: 8,
-              source: 'KLP Mathematik Gymnasium NRW (G9), Inhaltsfeld Geometrie, Kl. 7/8',
+              grade: 9,
+              source:
+                'KLP Mathematik Gymnasium NRW (G9) 2019, 2.4.2 Zweite Stufe, Inhaltsfeld Geometrie; QUA-LiS-Beispiel-SILP UV 9.1',
             },
           ],
           videos: [
@@ -59,8 +60,9 @@ export const exampleCurriculumDraft = {
             {
               state: 'NW',
               schoolType: 'gymnasium',
-              grade: 8,
-              source: 'KLP Mathematik Gymnasium NRW (G9), Inhaltsfeld Geometrie, Kl. 7/8',
+              grade: 9,
+              source:
+                'KLP Mathematik Gymnasium NRW (G9) 2019, 2.4.2 Zweite Stufe, Inhaltsfeld Geometrie; QUA-LiS-Beispiel-SILP UV 9.1',
             },
           ],
           videos: [
@@ -95,8 +97,9 @@ export const exampleCurriculumDraft = {
             {
               state: 'NW',
               schoolType: 'gymnasium',
-              grade: 8,
-              source: 'KLP Mathematik Gymnasium NRW (G9), Inhaltsfeld Geometrie, Kl. 7/8',
+              grade: 9,
+              source:
+                'KLP Mathematik Gymnasium NRW (G9) 2019, 2.4.2 Zweite Stufe, Inhaltsfeld Geometrie; QUA-LiS-Beispiel-SILP UV 9.1',
             },
           ],
           videos: [

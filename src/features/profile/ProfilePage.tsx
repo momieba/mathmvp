@@ -5,7 +5,14 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { grades, schoolTypeLabels, sortedEntries, stateLabels } from '@/features/curriculum/labels'
+import {
+  commonSchoolTypes,
+  grades,
+  otherSchoolTypes,
+  schoolTypeLabels,
+  sortedEntries,
+  stateLabels,
+} from '@/features/curriculum/labels'
 import type { SchoolType, State } from '@/features/curriculum/schema'
 import { PRIVACY_VERSION } from '@/features/legal/provider'
 import { useProfile, useUpdateProfile, type Profile } from './api'
@@ -118,11 +125,18 @@ function ProfileForm({ profile }: { profile: Profile }) {
                     <option value="" disabled>
                       Bitte wählen
                     </option>
-                    {sortedEntries(schoolTypeLabels).map(([value, label]) => (
+                    {commonSchoolTypes.map((value) => (
                       <option key={value} value={value}>
-                        {label}
+                        {schoolTypeLabels[value]}
                       </option>
                     ))}
+                    <optgroup label="Weitere Schulformen">
+                      {otherSchoolTypes.map((value) => (
+                        <option key={value} value={value}>
+                          {schoolTypeLabels[value]}
+                        </option>
+                      ))}
+                    </optgroup>
                   </select>
                 </div>
                 <div className="flex flex-col gap-2">
