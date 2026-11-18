@@ -2,5 +2,5 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
   "cleanUrls": true,
-  "rewrites": [{ "source": "/((?!assets/).*)", "destination": "/spa.html" }]
+  "rewrites": [{ "source": "/((?!assets/).*)", "destination": "/spa" }]
 }
