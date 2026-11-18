@@ -18,7 +18,7 @@
       "params": {
         "k": {
           "min": 1,
-          "max": 15,
+          "max": 11,
           "step": 1
         },
         "swap": {
@@ -26,8 +26,8 @@
         }
       },
       "derived": {
-        "A": "[3, 6, 5, 8, 9, 12, 7, 20, 15, 10, 12, 21, 16, 18, 24][k]",
-        "B": "[4, 8, 12, 15, 12, 16, 24, 21, 20, 24, 35, 28, 30, 24, 32][k]",
+        "A": "[3, 6, 5, 9, 8, 12, 7, 15, 18, 30, 60][k]",
+        "B": "[4, 8, 12, 12, 15, 16, 24, 20, 24, 40, 80][k]",
         "a": "swap == 0 ? A : B",
         "b": "swap == 0 ? B : A",
         "c2": "a^2 + b^2",
@@ -83,8 +83,7 @@
       "hints": [
         "Welche Seite liegt dem rechten Winkel gegenüber?",
         "Setze in $c^2 = a^2 + b^2$ ein und ziehe am Ende die Wurzel."
-      ],
-      "constraints": ["c <= 50"]
+      ]
     },
     {
       "id": "auswahl",
@@ -93,13 +92,13 @@
       "params": {
         "k": {
           "min": 1,
-          "max": 15,
+          "max": 11,
           "step": 1
         }
       },
       "derived": {
-        "a": "[3, 6, 5, 8, 9, 12, 7, 20, 15, 10, 12, 21, 16, 18, 24][k]",
-        "b": "[4, 8, 12, 15, 12, 16, 24, 21, 20, 24, 35, 28, 30, 24, 32][k]",
+        "a": "[3, 6, 5, 9, 8, 12, 7, 15, 18, 30, 60][k]",
+        "b": "[4, 8, 12, 12, 15, 16, 24, 20, 24, 40, 80][k]",
         "c2": "a^2 + b^2",
         "c": "sqrt(c2)",
         "wrongMinus": "round(sqrt(b^2 - a^2))"
@@ -128,8 +127,7 @@
         ],
         "result": "$c = {{c}}\\,\\text{cm}$"
       },
-      "hints": ["Erst quadrieren und addieren – und dann?"],
-      "constraints": ["c <= 50"]
+      "hints": ["Erst quadrieren und addieren – und dann?"]
     },
     {
       "id": "dezimal",
