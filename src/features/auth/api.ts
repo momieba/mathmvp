@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 
-const redirectTo = () => `${window.location.origin}/`
+const redirectTo = () => `${window.location.origin}/app`
 
 export function signInWithGoogle() {
   return supabase.auth.signInWithOAuth({

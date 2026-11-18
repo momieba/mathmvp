@@ -22,6 +22,8 @@ npm run db:new <name> | db:push | db:types    # Supabase, siehe Skill supabase-m
 - Datenmodell: Themen/Subthemen global; Zuordnung zu `(Bundesland, Schulform, Klasse)` als Placements; Schwierigkeit pro Placement.
 - Diagramme werden als Daten gespeichert (`diagramSchema`), nicht als Bilder.
 - Auth: Google OAuth + E-Mail-OTP (6-stelliger Code, PKCE). Kein Passwort-Login.
+- Routen: `/` Landing Page (öffentlich, beim Build vorgerendert), `/login`, `/app/*` geschützt (`RequireAuth`), `/impressum` + `/datenschutz` (noch Platzhalter → globaler Skill `legal-pages`).
+- Prerender: `npm run build` rendert `/` per `scripts/prerender.ts` → `dist/index.html` (hydratisiert in `main.tsx`); alle anderen Routen bekommen die leere Shell `dist/spa.html` (Rewrite in `vercel.json`, `noindex`). Landing-Texte/FAQ in `src/features/landing/content.ts` (speist auch das JSON-LD).
 - `video/` ist eine Python-Pipeline (Manim, ElevenLabs, ffmpeg, Conda-Env `mathtutor`), unabhängig vom Web-Stack. Kopie aus `math-tutor-videos`.
 - `research/curriculum/` enthält recherchierte Lehrplandaten (u.a. NRW Gymnasium) als Ausgangsbasis.
 
@@ -63,3 +65,6 @@ Admin-Ansicht         → review → published → archived (noch nicht gebaut)
 - Free-Tier mit Standard-SMTP: nur ~2 Mails/h und **keine eigenen Mail-Templates** → Standard-Mail enthält nur den Link, keinen 6-stelligen Code. Code-Login erst mit eigenem SMTP (z.B. Resend) + Template `supabase/templates/magic_link.html` (in `config.toml` auskommentiert).
 - `npm audit` meldet `picomatch` in vite/vitest (nur Dev-Toolchain); kein `audit fix --force`.
 - Video-Skills: Pfade relativ zu `video/`; Umlaute in Dateinamen vermeiden (`safe_thema`).
+- `LandingPage` und alles, was sie importiert, darf weder Supabase/Auth noch `window`/`import.meta.env` nutzen und muss auf Server und Client identisch rendern – sonst bricht der Prerender bzw. die Hydration.
+- `vite preview` kennt den `spa.html`-Rewrite nicht (liefert für alle Routen die Landing aus) – Routing-Verhalten nur auf Vercel-Previews prüfen.
+- Neue öffentliche Seiten in `public/sitemap.xml` eintragen; geschützte Routen in `public/robots.txt` ausschließen.
