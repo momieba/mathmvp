@@ -230,39 +230,78 @@ export type Database = {
           },
         ]
       }
+      subtopic_prerequisites: {
+        Row: {
+          prerequisite_id: string
+          subtopic_id: string
+        }
+        Insert: {
+          prerequisite_id: string
+          subtopic_id: string
+        }
+        Update: {
+          prerequisite_id?: string
+          subtopic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subtopic_prerequisites_prerequisite_id_fkey"
+            columns: ["prerequisite_id"]
+            isOneToOne: false
+            referencedRelation: "subtopics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subtopic_prerequisites_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "subtopics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subtopics: {
         Row: {
           created_at: string
           description: string
+          exercise_plan: Json
           id: string
+          learning_goals: string[]
           slug: string
           sort_order: number
+          stage: Database["public"]["Enums"]["learning_stage"]
           title: string
           topic_id: string
           updated_at: string
-          video_url: string | null
+          video_skip_reason: string | null
         }
         Insert: {
           created_at?: string
           description?: string
+          exercise_plan?: Json
           id?: string
+          learning_goals?: string[]
           slug: string
           sort_order?: number
+          stage: Database["public"]["Enums"]["learning_stage"]
           title: string
           topic_id: string
           updated_at?: string
-          video_url?: string | null
+          video_skip_reason?: string | null
         }
         Update: {
           created_at?: string
           description?: string
+          exercise_plan?: Json
           id?: string
+          learning_goals?: string[]
           slug?: string
           sort_order?: number
+          stage?: Database["public"]["Enums"]["learning_stage"]
           title?: string
           topic_id?: string
           updated_at?: string
-          video_url?: string | null
+          video_skip_reason?: string | null
         }
         Relationships: [
           {
@@ -304,6 +343,59 @@ export type Database = {
         }
         Relationships: []
       }
+      videos: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          format: Database["public"]["Enums"]["video_format"]
+          id: string
+          key_points: string[]
+          published_at: string | null
+          sort_order: number
+          status: Database["public"]["Enums"]["video_status"]
+          subtopic_id: string
+          title: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          format: Database["public"]["Enums"]["video_format"]
+          id?: string
+          key_points?: string[]
+          published_at?: string | null
+          sort_order?: number
+          status?: Database["public"]["Enums"]["video_status"]
+          subtopic_id: string
+          title: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          format?: Database["public"]["Enums"]["video_format"]
+          id?: string
+          key_points?: string[]
+          published_at?: string | null
+          sort_order?: number
+          status?: Database["public"]["Enums"]["video_status"]
+          subtopic_id?: string
+          title?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "videos_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "subtopics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -323,6 +415,7 @@ export type Database = {
         | "true_false"
         | "ordering"
         | "handwritten"
+      learning_stage: "einstieg" | "grundlagen" | "vertiefung" | "anwendung"
       school_type:
         | "gymnasium"
         | "realschule"
@@ -350,6 +443,8 @@ export type Database = {
         | "SH"
         | "TH"
       user_role: "student" | "parent" | "teacher" | "admin"
+      video_format: "explainer" | "short"
+      video_status: "planned" | "produced" | "published"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -492,6 +587,7 @@ export const Constants = {
         "ordering",
         "handwritten",
       ],
+      learning_stage: ["einstieg", "grundlagen", "vertiefung", "anwendung"],
       school_type: [
         "gymnasium",
         "realschule",
@@ -521,6 +617,8 @@ export const Constants = {
         "TH",
       ],
       user_role: ["student", "parent", "teacher", "admin"],
+      video_format: ["explainer", "short"],
+      video_status: ["planned", "produced", "published"],
     },
   },
 } as const

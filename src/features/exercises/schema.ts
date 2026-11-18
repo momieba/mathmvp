@@ -1,13 +1,18 @@
 import { z } from 'zod'
+import { difficultySchema, type ExerciseType } from '../content/enums'
 import { placementKeySchema, slugSchema } from '../curriculum/schema'
+
+export {
+  difficultySchema,
+  exerciseTypeSchema,
+  type Difficulty,
+  type ExerciseType,
+} from '../content/enums'
 
 /**
  * Text fields are Markdown with inline LaTeX in `$…$` and display LaTeX in `$$…$$` (rendered via KaTeX).
  */
 const richText = z.string().min(1)
-
-export const difficultySchema = z.enum(['leicht', 'mittel', 'schwer', 'sehr_schwer'])
-export type Difficulty = z.infer<typeof difficultySchema>
 
 /** Difficulty is relative to the placement: the same exercise can be "schwer" in grade 8 and "leicht" in grade 10. */
 export const exercisePlacementSchema = placementKeySchema.extend({ difficulty: difficultySchema })
@@ -83,12 +88,8 @@ const answerSchemas = {
     /** Self-check criteria shown next to the model solution. */
     rubric: z.array(richText).min(1),
   }),
-} as const
-
-export const exerciseTypeSchema = z.enum(
-  Object.keys(answerSchemas) as [keyof typeof answerSchemas, ...(keyof typeof answerSchemas)[]],
-)
-export type ExerciseType = z.infer<typeof exerciseTypeSchema>
+  // `satisfies` + excess-property check: exactly one answer schema per exercise type.
+} as const satisfies Record<ExerciseType, z.ZodType>
 
 const solutionSchema = z.object({
   steps: z.array(z.object({ text: richText, diagram: diagramSchema.optional() })).min(1),

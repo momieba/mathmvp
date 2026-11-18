@@ -19,22 +19,24 @@ npm run db:new <name> | db:push | db:types    # Supabase, siehe Skill supabase-m
 - **SPA ohne eigenes Backend**: Vite + React 19 + React Router, Daten über `@supabase/supabase-js` + TanStack Query. Sicherheit ausschließlich über **RLS** – darum Skill `supabase-migration` bei jeder Schema-Änderung.
 - `src/features/<feature>/` feature-basiert; `src/components/ui/` ist shadcn-generiert (per `npx shadcn@latest add …`, nicht von Hand umbauen, von oxlint ausgenommen).
 - `src/features/exercises/schema.ts` und `src/features/curriculum/schema.ts` sind die **einzige Quelle** für das Aufgaben- und Themenformat – genutzt von App, Validierungs-Script, Import und Agenten. Format ändern = dort ändern.
-- Datenmodell: Themen/Subthemen global; Zuordnung zu `(Bundesland, Schulform, Klasse)` als Placements; Schwierigkeit pro Placement.
+- Datenmodell (Lernplan): Themen/Subthemen global. Subthemen bilden pro Thema einen Lernpfad (`sort_order` + Stufe `einstieg → grundlagen → vertiefung → anwendung`) mit Lernzielen, Voraussetzungen (`subtopic_prerequisites`, auch themenübergreifend), Aufgabenplan (`exercise_plan`, **mind. 20 Aufgaben**) und geplanten Videos (`videos`, Status `planned → produced → published`). Einordnung `(Bundesland, Schulform, Klasse)` **pro Subthema**; Schwierigkeit pro Aufgaben-Placement. Referenzbeispiel: `src/features/curriculum/example-draft.ts`.
+- Gemeinsame Inhalts-Enums in `src/features/content/enums.ts`.
 - Diagramme werden als Daten gespeichert (`diagramSchema`), nicht als Bilder.
 - Auth: Google OAuth + E-Mail-OTP (6-stelliger Code, PKCE). Kein Passwort-Login.
 - Routen: öffentlich `/`, `/impressum`, `/datenschutz`, `/login`; mit Login `/profil` (Onboarding + Profil bearbeiten); mit Login **und** fertigem Profil `/app/*` (`RequireAuth` → `RequireProfile`).
 - Prerender: `npm run build` rendert die Seiten aus `src/prerender/entry.tsx` (`pages`) per `scripts/prerender.ts` nach `dist/*.html` (hydratisiert in `main.tsx`, `cleanUrls` in `vercel.json`); alle anderen Routen bekommen die leere Shell `dist/spa.html` (`noindex`). Landing-Texte/FAQ in `src/features/landing/content.ts` (speist auch das JSON-LD).
 - DB-Schema (`supabase/migrations/`): `profiles` (1:1 zu `auth.users`, per Trigger angelegt; Nutzer dürfen per Spaltenrechten nur `display_name`, `state`, `school_type`, `grade`, `privacy_version` ändern – `role` nie), `topics` → `subtopics` → `subtopic_placements`, `exercises` → `exercise_placements`, `exercise_solutions`. **Antworten/Lösungen/Hinweise nur in `exercise_solutions`** (für Schüler nicht lesbar); `exercises.presentation` enthält nur, was die UI braucht. Prüfen/Aufdecken später über SECURITY-DEFINER-Funktionen. Admin-Check: `private.is_admin()` (Schema `private` ist nicht per API erreichbar).
-- DB-Enums (`state_code`, `school_type`, `difficulty`, `exercise_type`) müssen mit den Zod-Schemas übereinstimmen – `src/features/curriculum/labels.test.ts` prüft das zur Compile-Zeit.
+- DB-Enums müssen mit den Zod-Enums übereinstimmen – `src/features/content/enums.test.ts` prüft das zur Compile-Zeit (nach `npm run db:types`). Neues Enum → dort ergänzen.
 - Rechtstexte: `src/features/legal/` – Anbieterdaten zentral in `provider.ts` (noch `[PLATZHALTER]`). Bei wesentlicher Änderung der Datenschutzerklärung `PRIVACY_VERSION` erhöhen → alle Nutzer müssen auf `/profil` neu zustimmen. Neue Drittanbieter → globalen Skill `legal-pages` erneut ausführen.
 - `video/` ist eine Python-Pipeline (Manim, ElevenLabs, ffmpeg, Conda-Env `mathtutor`), unabhängig vom Web-Stack. Kopie aus `math-tutor-videos`.
 - `research/curriculum/` enthält recherchierte Lehrplandaten (u.a. NRW Gymnasium) als Ausgangsbasis.
 
-## Aufgaben-Pipeline
+## Inhalts-Pipeline
 
 ```
-curriculum-researcher → drafts/curriculum/*.json
-exercise-author       → drafts/exercises/*.json
+curriculum-researcher → drafts/curriculum/*.json   (Lernplan: Themen, Subthemen, Einordnung, Videos, Aufgabenplan)
+exercise-author       → drafts/exercises/*.json    (arbeitet exercise_plan ab, Batches à ~20)
+create-math-video/-short → Videos aus dem Video-Plan (keyPoints)
 math-checker          → Bericht (FREIGEGEBEN / NICHT FREIGEGEBEN)
 Import-Script         → Supabase, status = 'review'   (noch nicht gebaut)
 Admin-Ansicht         → review → published → archived (noch nicht gebaut)
