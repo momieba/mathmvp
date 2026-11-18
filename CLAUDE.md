@@ -11,6 +11,7 @@ npm test                    # alle Tests (Vitest)
 npx vitest run src/features/exercises/schema.test.ts   # einzelne Testdatei
 npm run typecheck && npm run lint && npm run format:check   # vor jedem Commit
 npm run drafts:validate [-- <datei|ordner>]   # Entwürfe gegen Zod-Schema prüfen
+npm run exercises:generate -- <vorlage.json> [--seed N] [--force]   # Aufgaben aus Vorlage erzeugen
 npm run db:new <name> | db:push | db:types    # Supabase, siehe Skill supabase-migration
 ```
 
@@ -35,7 +36,8 @@ npm run db:new <name> | db:push | db:types    # Supabase, siehe Skill supabase-m
 
 ```
 curriculum-researcher → drafts/curriculum/*.json   (Lernplan: Themen, Subthemen, Einordnung, Videos, Aufgabenplan)
-exercise-author       → drafts/exercises/*.json    (arbeitet exercise_plan ab, Batches à ~20)
+exercise-author       → drafts/templates/*.json → exercises:generate → drafts/exercises/*.json
+                        (bevorzugt Vorlage + Generator; Handarbeit für handwritten/Begründungen/komplexe Sachaufgaben)
 create-math-video/-short → Videos aus dem Video-Plan (keyPoints)
 math-checker          → Bericht (FREIGEGEBEN / NICHT FREIGEGEBEN)
 Import-Script         → Supabase, status = 'review'   (noch nicht gebaut)
@@ -44,10 +46,13 @@ Admin-Ansicht         → review → published → archived (noch nicht gebaut)
 
 - Aufgaben werden nie gelöscht, nur archiviert (Schülerantworten referenzieren sie).
 - Eigene Aufgaben nach Vorbild von Schulbuchaufgaben – **nie übernehmen**, Regeln in `.claude/agents/exercise-author.md`.
+- Generator (`src/features/exercises/template/`): deklarative JSON-Vorlagen (mathjs-Ausdrücke, kein ausführbarer Agent-Code; Parser-Funktionen gesperrt), deterministisch pro Seed, erzeugt das **normale Entwurfsformat** – Rest der Pipeline unverändert. Unterstützt aktuell `numeric` und `multiple_choice`. Muster: `template/examples/pythagoras-hypotenuse-berechnen.json`. Ziel aktuell: 20 Aufgaben pro Subthema, gespeichert in der DB (keine Live-Generierung).
+- Beim Überschreiben einer Generator-Datei (`--force`) bleiben die Keys gleich; Keys anderer Dateien desselben Subthemas werden fortgezählt.
 
 ## Agenten & Abläufe
 
 - **Nach jeder Aufgaben-Generierung oder Änderung in `drafts/exercises/` immer `math-checker`.** Importiert wird nur, was er FREIGEGEBEN hat.
+- **Hinweise des `math-checker`, dass etwas zu schwer für die Stufe ist, werden immer umgesetzt** – auch wenn er sie nicht als Warnung führt (Wunsch des Users). „Leicht“ heißt auch leichte, im Kopf nachrechenbare Zahlen.
 - Fehlt ein Subthema für neue Aufgaben → zuerst `curriculum-researcher`.
 - Schema-Änderungen → Skill `supabase-migration`.
 - Videos → Skills `create-math-video` (16:9) und `create-math-short` (9:16); Arbeitsverzeichnis `video/`.

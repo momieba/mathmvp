@@ -1,0 +1,360 @@
+{
+  "id": "pythagoras-hypotenuse-berechnen",
+  "subtopic": "pythagoras-hypotenuse-berechnen",
+  "placements": [
+    {
+      "state": "NW",
+      "schoolType": "gymnasium",
+      "grade": 8
+    }
+  ],
+  "uniqueBy": "sort([a, b])",
+  "checks": ["abs(c^2 - (a^2 + b^2)) < 1e-9", "c > a and c > b", "a > 0 and b > 0"],
+  "levels": [
+    {
+      "id": "ganzzahlig",
+      "difficulty": "leicht",
+      "count": 6,
+      "params": {
+        "k": {
+          "min": 1,
+          "max": 15,
+          "step": 1
+        },
+        "swap": {
+          "values": [0, 1]
+        }
+      },
+      "derived": {
+        "A": "[3, 6, 5, 8, 9, 12, 7, 20, 15, 10, 12, 21, 16, 18, 24][k]",
+        "B": "[4, 8, 12, 15, 12, 16, 24, 21, 20, 24, 35, 28, 30, 24, 32][k]",
+        "a": "swap == 0 ? A : B",
+        "b": "swap == 0 ? B : A",
+        "c2": "a^2 + b^2",
+        "c": "sqrt(c2)"
+      },
+      "contexts": [
+        {
+          "id": "katheten",
+          "prompt": "Ein rechtwinkliges Dreieck hat die Katheten $a = {{a}}\\,\\text{cm}$ und $b = {{b}}\\,\\text{cm}$. Berechne die Länge der Hypotenuse $c$.",
+          "diagram": {
+            "kind": "geometry",
+            "points": {
+              "C": [0, 0],
+              "A": ["{{b}}", 0],
+              "B": [0, "{{a}}"]
+            },
+            "polygons": [["A", "B", "C"]],
+            "rightAngles": ["C"],
+            "labels": [
+              {
+                "at": ["{{b/2}}", "{{-0.1*max(a,b)}}"],
+                "text": "b = {{b}} cm"
+              },
+              {
+                "at": ["{{-0.12*max(a,b)}}", "{{a/2}}"],
+                "text": "a = {{a}} cm"
+              },
+              {
+                "at": ["{{b/2 + 0.07*max(a,b)}}", "{{a/2 + 0.07*max(a,b)}}"],
+                "text": "c = ?"
+              }
+            ]
+          }
+        },
+        {
+          "id": "dreieck-abc",
+          "prompt": "Im Dreieck $ABC$ liegt bei $C$ ein rechter Winkel. Die Seiten sind $a = {{a}}\\,\\text{cm}$ und $b = {{b}}\\,\\text{cm}$ lang. Wie lang ist die Seite $c$?"
+        }
+      ],
+      "answer": {
+        "type": "numeric",
+        "value": "c",
+        "unit": "cm"
+      },
+      "solution": {
+        "steps": [
+          "Die Hypotenuse $c$ liegt dem rechten Winkel gegenüber. Nach dem Satz des Pythagoras gilt $c^2 = a^2 + b^2$.",
+          "Einsetzen: $c^2 = {{a}}^2 + {{b}}^2 = {{a^2}} + {{b^2}} = {{c2}}$",
+          "Wurzel ziehen: $c = \\sqrt{ {{c2}} } = {{c}}$"
+        ],
+        "result": "$c = {{c}}\\,\\text{cm}$"
+      },
+      "hints": [
+        "Welche Seite liegt dem rechten Winkel gegenüber?",
+        "Setze in $c^2 = a^2 + b^2$ ein und ziehe am Ende die Wurzel."
+      ],
+      "constraints": ["c <= 50"]
+    },
+    {
+      "id": "auswahl",
+      "difficulty": "leicht",
+      "count": 4,
+      "params": {
+        "k": {
+          "min": 1,
+          "max": 15,
+          "step": 1
+        }
+      },
+      "derived": {
+        "a": "[3, 6, 5, 8, 9, 12, 7, 20, 15, 10, 12, 21, 16, 18, 24][k]",
+        "b": "[4, 8, 12, 15, 12, 16, 24, 21, 20, 24, 35, 28, 30, 24, 32][k]",
+        "c2": "a^2 + b^2",
+        "c": "sqrt(c2)",
+        "wrongMinus": "round(sqrt(b^2 - a^2))"
+      },
+      "contexts": [
+        {
+          "id": "welche-laenge",
+          "prompt": "Ein rechtwinkliges Dreieck hat die Katheten $a = {{a}}\\,\\text{cm}$ und $b = {{b}}\\,\\text{cm}$. Wie lang ist die Hypotenuse $c$?"
+        },
+        {
+          "id": "richtiges-ergebnis",
+          "prompt": "Die Katheten eines rechtwinkligen Dreiecks sind ${{a}}\\,\\text{cm}$ und ${{b}}\\,\\text{cm}$ lang. Welches Ergebnis für die Hypotenuse ist richtig?"
+        }
+      ],
+      "answer": {
+        "type": "multiple_choice",
+        "correct": "{{c}} cm",
+        "distractors": ["{{a + b}} cm", "{{a^2 + b^2}} cm", "{{wrongMinus}} cm"]
+      },
+      "solution": {
+        "steps": [
+          "Nach dem Satz des Pythagoras gilt $c^2 = a^2 + b^2$.",
+          "Einsetzen: $c^2 = {{a}}^2 + {{b}}^2 = {{a^2}} + {{b^2}} = {{c2}}$",
+          "Wurzel ziehen: $c = \\sqrt{ {{c2}} } = {{c}}$",
+          "Typische Fehler: die Seiten einfach addieren ({{a + b}}), die Wurzel vergessen ({{c2}}) oder die Quadrate subtrahieren statt addieren (etwa {{wrongMinus}})."
+        ],
+        "result": "$c = {{c}}\\,\\text{cm}$"
+      },
+      "hints": ["Erst quadrieren und addieren – und dann?"],
+      "constraints": ["c <= 50"]
+    },
+    {
+      "id": "dezimal",
+      "difficulty": "mittel",
+      "count": 5,
+      "params": {
+        "a": {
+          "min": 2,
+          "max": 12,
+          "step": 0.5
+        },
+        "b": {
+          "min": 2,
+          "max": 12,
+          "step": 0.5
+        }
+      },
+      "derived": {
+        "c2": "a^2 + b^2",
+        "c": "sqrt(c2)",
+        "cr": "round(c, 1)"
+      },
+      "constraints": [
+        "a != b",
+        "abs(c - round(c)) > 0.05",
+        "a != round(a) or b != round(b)",
+        "abs(mod(c * 10, 1) - 0.5) > 0.05"
+      ],
+      "contexts": [
+        {
+          "id": "katheten-runden",
+          "prompt": "Ein rechtwinkliges Dreieck hat die Katheten $a = {{a}}\\,\\text{cm}$ und $b = {{b}}\\,\\text{cm}$. Berechne die Hypotenuse $c$ in cm und runde auf eine Nachkommastelle.",
+          "diagram": {
+            "kind": "geometry",
+            "points": {
+              "C": [0, 0],
+              "A": ["{{b}}", 0],
+              "B": [0, "{{a}}"]
+            },
+            "polygons": [["A", "B", "C"]],
+            "rightAngles": ["C"],
+            "labels": [
+              {
+                "at": ["{{b/2}}", "{{-0.1*max(a,b)}}"],
+                "text": "b = {{b}} cm"
+              },
+              {
+                "at": ["{{-0.12*max(a,b)}}", "{{a/2}}"],
+                "text": "a = {{a}} cm"
+              },
+              {
+                "at": ["{{b/2 + 0.07*max(a,b)}}", "{{a/2 + 0.07*max(a,b)}}"],
+                "text": "c = ?"
+              }
+            ]
+          }
+        },
+        {
+          "id": "kuerzere-seiten",
+          "prompt": "Bei einem rechtwinkligen Dreieck sind die beiden kürzeren Seiten ${{a}}\\,\\text{cm}$ und ${{b}}\\,\\text{cm}$ lang. Wie lang ist die längste Seite? Gib das Ergebnis in cm an und runde auf Millimeter genau."
+        },
+        {
+          "id": "kennst-du",
+          "prompt": "Von einem rechtwinkligen Dreieck kennst du die Katheten $a = {{a}}\\,\\text{cm}$ und $b = {{b}}\\,\\text{cm}$. Bestimme die Hypotenuse $c$ in cm, auf Millimeter genau."
+        }
+      ],
+      "answer": {
+        "type": "numeric",
+        "value": "cr",
+        "tolerance": "0.05",
+        "unit": "cm"
+      },
+      "solution": {
+        "steps": [
+          "Gesucht ist die Seite gegenüber dem rechten Winkel, also die Hypotenuse $c$. Es gilt $c^2 = a^2 + b^2$.",
+          "Einsetzen: $c^2 = {{a}}^2 + {{b}}^2 = {{a^2}} + {{b^2}} = {{c2}}$",
+          "Wurzel ziehen: $c = \\sqrt{ {{c2}} } \\approx {{c:3}}$",
+          "Auf eine Nachkommastelle (Millimeter) runden: $c \\approx {{cr:1}}\\,\\text{cm}$"
+        ],
+        "result": "$c \\approx {{cr:1}}\\,\\text{cm}$"
+      },
+      "hints": [
+        "Die längste Seite im rechtwinkligen Dreieck ist immer die Hypotenuse.",
+        "Rechne erst mit dem genauen Wert und runde erst ganz am Ende."
+      ]
+    },
+    {
+      "id": "einheiten",
+      "difficulty": "mittel",
+      "count": 2,
+      "params": {
+        "a": {
+          "min": 3,
+          "max": 9,
+          "step": 0.5
+        },
+        "bmm": {
+          "min": 30,
+          "max": 120,
+          "step": 5
+        }
+      },
+      "derived": {
+        "b": "bmm / 10",
+        "c2": "a^2 + b^2",
+        "c": "sqrt(c2)",
+        "cr": "round(c, 1)"
+      },
+      "constraints": [
+        "abs(a - b) >= 1",
+        "abs(c - round(c)) > 0.05",
+        "abs(mod(c * 10, 1) - 0.5) > 0.05",
+        "mod(bmm, 100) != 0"
+      ],
+      "contexts": [
+        {
+          "id": "gemischte-einheiten",
+          "prompt": "Ein rechtwinkliges Dreieck hat die Katheten $a = {{a}}\\,\\text{cm}$ und $b = {{bmm}}\\,\\text{mm}$. Berechne die Hypotenuse $c$ in Zentimetern und runde auf eine Nachkommastelle."
+        }
+      ],
+      "answer": {
+        "type": "numeric",
+        "value": "cr",
+        "tolerance": "0.05",
+        "unit": "cm"
+      },
+      "solution": {
+        "steps": [
+          "Zuerst gleiche Einheiten: $b = {{bmm}}\\,\\text{mm} = {{b}}\\,\\text{cm}$",
+          "Nach dem Satz des Pythagoras gilt $c^2 = a^2 + b^2$, also $c^2 = {{a}}^2 + {{b}}^2 = {{a^2}} + {{b^2}} = {{c2}}$",
+          "Wurzel ziehen: $c = \\sqrt{ {{c2}} } \\approx {{c:3}}$",
+          "Runden: $c \\approx {{cr:1}}\\,\\text{cm}$"
+        ],
+        "result": "$c \\approx {{cr:1}}\\,\\text{cm}$"
+      },
+      "hints": [
+        "Achte auf die Einheiten – rechne alles in Zentimeter um, bevor du einsetzt.",
+        "$10\\,\\text{mm} = 1\\,\\text{cm}$"
+      ],
+      "uniqueBy": "bmm"
+    },
+    {
+      "id": "rechteck-diagonale",
+      "difficulty": "schwer",
+      "count": 3,
+      "params": {
+        "a": {
+          "min": 4,
+          "max": 15,
+          "step": 0.5
+        },
+        "bmm": {
+          "min": 25,
+          "max": 110,
+          "step": 5
+        }
+      },
+      "derived": {
+        "b": "bmm / 10",
+        "c2": "a^2 + b^2",
+        "c": "sqrt(c2)",
+        "cr": "round(c, 1)"
+      },
+      "constraints": [
+        "a > b",
+        "abs(a - b) >= 1",
+        "abs(c - round(c)) > 0.05",
+        "abs(mod(c * 10, 1) - 0.5) > 0.05"
+      ],
+      "contexts": [
+        {
+          "id": "rechteck",
+          "prompt": "Ein Rechteck ist ${{a}}\\,\\text{cm}$ lang und ${{bmm}}\\,\\text{mm}$ breit. Wie lang ist seine Diagonale in Zentimetern? Runde auf eine Nachkommastelle.",
+          "diagram": {
+            "kind": "geometry",
+            "points": {
+              "A": [0, 0],
+              "B": ["{{a}}", 0],
+              "C": ["{{a}}", "{{b}}"],
+              "D": [0, "{{b}}"]
+            },
+            "polygons": [["A", "B", "C", "D"]],
+            "segments": [["A", "C"]],
+            "rightAngles": ["B"],
+            "labels": [
+              {
+                "at": ["{{a/2}}", "{{-0.1*max(a,b)}}"],
+                "text": "{{a}} cm"
+              },
+              {
+                "at": ["{{a + 0.15*max(a,b)}}", "{{b/2}}"],
+                "text": "{{bmm}} mm"
+              },
+              {
+                "at": ["{{a/2 - 0.05*max(a,b)}}", "{{b/2 + 0.08*max(a,b)}}"],
+                "text": "d = ?"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blatt-ecken",
+          "prompt": "Ein rechteckiges Stück Karton ist ${{a}}\\,\\text{cm}$ lang und ${{bmm}}\\,\\text{mm}$ breit. Wie lang ist die Strecke von einer Ecke zur schräg gegenüberliegenden Ecke? Gib das Ergebnis in cm an und runde auf eine Nachkommastelle."
+        }
+      ],
+      "answer": {
+        "type": "numeric",
+        "value": "cr",
+        "tolerance": "0.05",
+        "unit": "cm"
+      },
+      "solution": {
+        "steps": [
+          "Zuerst gleiche Einheiten: ${{bmm}}\\,\\text{mm} = {{b}}\\,\\text{cm}$",
+          "Die Diagonale $d$ teilt das Rechteck in zwei rechtwinklige Dreiecke. Die Seiten ${{a}}\\,\\text{cm}$ und ${{b}}\\,\\text{cm}$ sind die Katheten, die Diagonale ist die Hypotenuse.",
+          "Satz des Pythagoras: $d^2 = {{a}}^2 + {{b}}^2 = {{a^2}} + {{b^2}} = {{c2}}$",
+          "Wurzel ziehen: $d = \\sqrt{ {{c2}} } \\approx {{c:3}}$",
+          "Runden: $d \\approx {{cr:1}}\\,\\text{cm}$"
+        ],
+        "result": "$d \\approx {{cr:1}}\\,\\text{cm}$"
+      },
+      "hints": [
+        "Zeichne die Diagonale ein – welches Dreieck entsteht?",
+        "Rechne zuerst alle Längen in Zentimeter um."
+      ]
+    }
+  ]
+}

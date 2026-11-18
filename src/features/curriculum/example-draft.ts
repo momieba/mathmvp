@@ -76,7 +76,7 @@ export const exampleCurriculumDraft = {
             },
           ],
           exercisePlan: {
-            targetCount: 40,
+            targetCount: 20,
             types: ['numeric'],
             difficultyMix: { leicht: 50, mittel: 35, schwer: 15 },
             variationIdeas: ['pythagoreische Tripel', 'Dezimalzahlen', 'verschiedene Einheiten'],
@@ -107,7 +107,7 @@ export const exampleCurriculumDraft = {
             },
           ],
           exercisePlan: {
-            targetCount: 30,
+            targetCount: 20,
             types: ['numeric', 'handwritten'],
             difficultyMix: { mittel: 40, schwer: 40, sehr_schwer: 20 },
             variationIdeas: ['Leiter an Wand', 'Bildschirmdiagonale', 'Abkürzung über Wiese'],

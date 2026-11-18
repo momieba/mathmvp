@@ -16,7 +16,8 @@
     "db:types": "supabase gen types typescript --remote > src/types/database.ts",
     "db:push": "supabase db push --remote",
     "db:new": "supabase migration new",
-    "drafts:validate": "tsx scripts/validate-drafts.ts"
+    "drafts:validate": "tsx scripts/validate-drafts.ts",
+    "exercises:generate": "tsx scripts/generate-exercises.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -46,6 +47,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "@vitest/coverage-v8": "^5.1.1",
     "jsdom": "^29.1.1",
+    "mathjs": "^15.2.0",
     "oxlint": "^1.90.0",
     "prettier": "^3.10.1",
     "prettier-plugin-tailwindcss": "^0.8.1",
