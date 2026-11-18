@@ -1,34 +1,58 @@
 /**
- * Post-build step: prerenders the landing page into dist/index.html and keeps an empty SPA shell
- * as dist/spa.html for all other routes (see vercel.json rewrites).
+ * Post-build step: prerenders the public pages (landing, Impressum, Datenschutz) into dist/*.html
+ * and keeps an empty SPA shell as dist/spa.html for all other routes (see vercel.json).
  * Run via `npm run build` (uses tsx with tsconfig.app.json for the "@/" alias and JSX).
  */
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-type Entry = { renderLanding: () => string; landingJsonLd: () => string }
+type Page = {
+  path: string
+  file: string
+  title: string
+  description: string
+  jsonLd?: () => string
+}
+type Entry = { pages: Page[]; renderPage: (page: Page) => string }
 
+const SITE_URL = 'https://mathmvp.vercel.app'
 const dist = join(import.meta.dirname, '..', 'dist')
 const entryPath = '../src/prerender/entry.tsx'
 // Non-literal specifier keeps tsc (node config) from type-checking the TSX entry.
-const { renderLanding, landingJsonLd } = (await import(entryPath)) as Entry
+const { pages, renderPage } = (await import(entryPath)) as Entry
 
 const shell = readFileSync(join(dist, 'index.html'), 'utf8')
 const rootTag = '<div id="root"></div>'
 const headMarker = '<!--prerender:head-->'
-if (!shell.includes(rootTag) || !shell.includes(headMarker)) {
-  throw new Error('dist/index.html is missing the root element or the prerender:head marker')
+for (const needle of [rootTag, headMarker, '<title>', 'name="description"', 'rel="canonical"']) {
+  if (!shell.includes(needle)) throw new Error(`dist/index.html is missing ${needle}`)
 }
 
-// SPA shell for /login, /app, … – not indexable, no canonical to the landing page.
+const escapeAttr = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+
+// SPA shell for /login, /app, /profil … – not indexable, no canonical.
 const spa = shell
   .replace(/\s*<link rel="canonical"[^>]*>/, '')
   .replace(headMarker, '<meta name="robots" content="noindex" />')
 writeFileSync(join(dist, 'spa.html'), spa)
 
-const landing = shell
-  .replace(headMarker, `<script type="application/ld+json">${landingJsonLd()}</script>`)
-  .replace(rootTag, `<div id="root">${renderLanding()}</div>`)
-writeFileSync(join(dist, 'index.html'), landing)
-
-console.log('prerendered dist/index.html (landing) + dist/spa.html (app shell)')
+for (const page of pages) {
+  const url = SITE_URL + page.path
+  const html = shell
+    .replace(/<title>[^<]*<\/title>/, `<title>${escapeAttr(page.title)}</title>`)
+    .replace(
+      /(<meta\s+name="description"\s+content=")[^"]*(")/,
+      `$1${escapeAttr(page.description)}$2`,
+    )
+    .replace(/(<link rel="canonical" href=")[^"]*(")/, `$1${url}$2`)
+    .replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${url}$2`)
+    .replace(
+      headMarker,
+      page.jsonLd ? `<script type="application/ld+json">${page.jsonLd()}</script>` : '',
+    )
+    .replace(rootTag, `<div id="root">${renderPage(page)}</div>`)
+  writeFileSync(join(dist, page.file), html)
+  console.log(`prerendered ${page.path} → dist/${page.file}`)
+}
+console.log('wrote dist/spa.html (app shell)')

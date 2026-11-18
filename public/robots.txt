@@ -2,5 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /app
 Disallow: /login
+Disallow: /profil
 
 Sitemap: https://mathmvp.vercel.app/sitemap.xml

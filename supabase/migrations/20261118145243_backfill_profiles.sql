@@ -1,0 +1,2 @@
+-- Intentionally empty: applied without content by accident.
+-- The backfill lives in 20261118145549_backfill_existing_user_profiles.sql.

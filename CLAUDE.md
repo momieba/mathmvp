@@ -22,8 +22,11 @@ npm run db:new <name> | db:push | db:types    # Supabase, siehe Skill supabase-m
 - Datenmodell: Themen/Subthemen global; Zuordnung zu `(Bundesland, Schulform, Klasse)` als Placements; Schwierigkeit pro Placement.
 - Diagramme werden als Daten gespeichert (`diagramSchema`), nicht als Bilder.
 - Auth: Google OAuth + E-Mail-OTP (6-stelliger Code, PKCE). Kein Passwort-Login.
-- Routen: `/` Landing Page (öffentlich, beim Build vorgerendert), `/login`, `/app/*` geschützt (`RequireAuth`), `/impressum` + `/datenschutz` (noch Platzhalter → globaler Skill `legal-pages`).
-- Prerender: `npm run build` rendert `/` per `scripts/prerender.ts` → `dist/index.html` (hydratisiert in `main.tsx`); alle anderen Routen bekommen die leere Shell `dist/spa.html` (Rewrite in `vercel.json`, `noindex`). Landing-Texte/FAQ in `src/features/landing/content.ts` (speist auch das JSON-LD).
+- Routen: öffentlich `/`, `/impressum`, `/datenschutz`, `/login`; mit Login `/profil` (Onboarding + Profil bearbeiten); mit Login **und** fertigem Profil `/app/*` (`RequireAuth` → `RequireProfile`).
+- Prerender: `npm run build` rendert die Seiten aus `src/prerender/entry.tsx` (`pages`) per `scripts/prerender.ts` nach `dist/*.html` (hydratisiert in `main.tsx`, `cleanUrls` in `vercel.json`); alle anderen Routen bekommen die leere Shell `dist/spa.html` (`noindex`). Landing-Texte/FAQ in `src/features/landing/content.ts` (speist auch das JSON-LD).
+- DB-Schema (`supabase/migrations/`): `profiles` (1:1 zu `auth.users`, per Trigger angelegt; Nutzer dürfen per Spaltenrechten nur `display_name`, `state`, `school_type`, `grade`, `privacy_version` ändern – `role` nie), `topics` → `subtopics` → `subtopic_placements`, `exercises` → `exercise_placements`, `exercise_solutions`. **Antworten/Lösungen/Hinweise nur in `exercise_solutions`** (für Schüler nicht lesbar); `exercises.presentation` enthält nur, was die UI braucht. Prüfen/Aufdecken später über SECURITY-DEFINER-Funktionen. Admin-Check: `private.is_admin()` (Schema `private` ist nicht per API erreichbar).
+- DB-Enums (`state_code`, `school_type`, `difficulty`, `exercise_type`) müssen mit den Zod-Schemas übereinstimmen – `src/features/curriculum/labels.test.ts` prüft das zur Compile-Zeit.
+- Rechtstexte: `src/features/legal/` – Anbieterdaten zentral in `provider.ts` (noch `[PLATZHALTER]`). Bei wesentlicher Änderung der Datenschutzerklärung `PRIVACY_VERSION` erhöhen → alle Nutzer müssen auf `/profil` neu zustimmen. Neue Drittanbieter → globalen Skill `legal-pages` erneut ausführen.
 - `video/` ist eine Python-Pipeline (Manim, ElevenLabs, ffmpeg, Conda-Env `mathtutor`), unabhängig vom Web-Stack. Kopie aus `math-tutor-videos`.
 - `research/curriculum/` enthält recherchierte Lehrplandaten (u.a. NRW Gymnasium) als Ausgangsbasis.
 
@@ -59,8 +62,9 @@ Admin-Ansicht         → review → published → archived (noch nicht gebaut)
 ## Fallstricke
 
 - TypeScript 7: `baseUrl` existiert nicht mehr – Pfad-Alias `@/*` nur über `paths`.
-- Kein Docker → kein lokales Supabase; `db:push` geht gegen das Cloud-Dev-Projekt.
-- `src/types/database.ts` ist generiert (`npm run db:types`), aktuell ein Platzhalter bis zum Supabase-Link.
+- Kein Docker → kein lokales Supabase. Die Supabase CLI zielt standardmäßig auf **lokal** – für das Cloud-Projekt immer `--remote` (in `db:push`/`db:types` schon drin; auch bei `db query`, `db advisors`, `config push`). Agent-Läufe brauchen für Schreibzugriffe `--yes`, für reine Abfragen `--read-only`.
+- Nach jeder Migration: `npm run db:types` und `npx supabase db advisors --remote` (Ziel: keine Warnungen außer „Leaked Password Protection“, irrelevant ohne Passwort-Login).
+- `src/types/database.ts` ist generiert – nicht von Hand ändern.
 - Auth-Einstellungen (Site-URL, Redirects, OTP) liegen in `supabase/config.toml` → `npx supabase config push`. Vorher Diff lesen: Werte, die lokal nur Defaults sind, überschreiben sonst Remote-Einstellungen.
 - Free-Tier mit Standard-SMTP: nur ~2 Mails/h und **keine eigenen Mail-Templates** → Standard-Mail enthält nur den Link, keinen 6-stelligen Code. Code-Login erst mit eigenem SMTP (z.B. Resend) + Template `supabase/templates/magic_link.html` (in `config.toml` auskommentiert).
 - `npm audit` meldet `picomatch` in vite/vitest (nur Dev-Toolchain); kein `audit fix --force`.
