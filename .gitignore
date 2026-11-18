@@ -1,0 +1,53 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Supabase
+supabase/.temp
+supabase/.branches
+
+# Claude
+.claude/settings.local.json
+.claude/*
+
+# Vercel
+.vercel
+
+# Test
+coverage
+
+# Video pipeline
+video/output
+video/media
+__pycache__
+
+# Local-only working material
+docs/
+drafts/
+research/curriculum/exports/

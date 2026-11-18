@@ -1,0 +1,16 @@
+name: mathtutor
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - manim
+  - pyyaml
+  - pip
+  - pip:
+      - anthropic
+      - edge-tts
+      - python-dotenv
+      - openpyxl
+      - Pillow
+      - matplotlib

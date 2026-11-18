@@ -1,0 +1,1299 @@
+{
+  "bundesland": "Nordrhein-Westfalen",
+  "schulform": "Gymnasium",
+  "generated_at": "2026-07-20",
+  "quellen": [
+    "Kernlehrplan Mathematik NRW Gymnasium G9 (MSW NRW, 2019) – lehrplannavigator.nrw.de",
+    "Kernlehrplan Mathematik Gymnasiale Oberstufe NRW (MSW NRW, 2014/2022) – schulentwicklung.nrw.de",
+    "mathegym.de – Lehrplanübersicht NRW Gymnasium Klasse 5–11 (abgerufen 2026-07-20)",
+    "Lehrplannavigator NRW – Sekundarstufe I & II Gymnasium Mathematik (lehrplannavigator.nrw.de)"
+  ],
+  "klassen": {
+    "5": {
+      "Natürliche Zahlen": {
+        "unterthemen": [
+          {
+            "displayname": "Stellenwerte und Zahldarstellung",
+            "beschreibung": "Zahlen im Zehnersystem nach Stellenwerten gliedern, lesen und schreiben"
+          },
+          {
+            "displayname": "Riesenzahlen ab einer Million",
+            "beschreibung": "Zahlen über eine Million lesen, schreiben und der Größe nach vergleichen"
+          },
+          {
+            "displayname": "Grundrechenarten",
+            "beschreibung": "Addition, Subtraktion, Multiplikation und Division natürlicher Zahlen sicher anwenden"
+          },
+          {
+            "displayname": "Quadratzahlen",
+            "beschreibung": "Quadratzahlen erkennen, berechnen und im Kopf abrufen (1² bis 20²)"
+          },
+          {
+            "displayname": "Kubikzahlen",
+            "beschreibung": "Kubikzahlen erkennen und berechnen (z.B. 2³ = 8, 3³ = 27)"
+          },
+          {
+            "displayname": "Teiler, Vielfache und Primzahlen",
+            "beschreibung": "Teiler und Vielfache bestimmen; Primzahlen mit dem Sieb des Eratosthenes finden"
+          },
+          {
+            "displayname": "Terme vereinfachen",
+            "beschreibung": "Terme mit Grundrechenarten aufstellen und durch Zusammenfassen vereinfachen"
+          },
+          {
+            "displayname": "Terme berechnen",
+            "beschreibung": "Termwerte durch Einsetzen konkreter Zahlen berechnen"
+          },
+          {
+            "displayname": "Einfache Gleichungen lösen",
+            "beschreibung": "Einfache Gleichungen durch Rückwärtsrechnen und Probieren lösen"
+          }
+        ],
+        "stunden_pro_jahr": 25,
+        "status": "ausstehend"
+      },
+      "Größen und Einheiten": {
+        "unterthemen": [
+          {
+            "displayname": "Längenmaße umrechnen",
+            "beschreibung": "Längeneinheiten mm, cm, dm, m und km sicher umrechnen und anwenden"
+          },
+          {
+            "displayname": "Zeiteinheiten",
+            "beschreibung": "Zeiteinheiten von Sekunden bis Jahren kennen und ineinander umrechnen"
+          },
+          {
+            "displayname": "Geldeinheiten im Alltag",
+            "beschreibung": "Mit Cent und Euro in alltäglichen Kaufsituationen rechnen"
+          },
+          {
+            "displayname": "Maßstab berechnen",
+            "beschreibung": "Maßstäbe anwenden, um reale Längen aus Karten und Plänen zu berechnen"
+          },
+          {
+            "displayname": "Sachaufgaben mit Größen",
+            "beschreibung": "Textaufgaben mit verschiedenen Maßeinheiten modellieren und lösen"
+          }
+        ],
+        "stunden_pro_jahr": 15,
+        "status": "ausstehend"
+      },
+      "Geometrie – Grundbegriffe": {
+        "unterthemen": [
+          {
+            "displayname": "Grundbegriffe der Geometrie",
+            "beschreibung": "Punkte, Strecken, Geraden, Halbgeraden und Strahlen unterscheiden und benennen"
+          },
+          {
+            "displayname": "Parallele und senkrechte Geraden",
+            "beschreibung": "Parallele und senkrechte Geraden erkennen, zeichnen und begründen"
+          },
+          {
+            "displayname": "Koordinatensystem",
+            "beschreibung": "Punkte in das Koordinatensystem einzeichnen und ablesen"
+          },
+          {
+            "displayname": "Dreiecke klassifizieren",
+            "beschreibung": "Dreiecke nach Seiten (gleichseitig, gleichschenklig) und Winkeln unterscheiden"
+          },
+          {
+            "displayname": "Vierecke und ihre Eigenschaften",
+            "beschreibung": "Quadrat, Rechteck, Parallelogramm, Raute und Trapez unterscheiden und beschreiben"
+          },
+          {
+            "displayname": "Achsensymmetrie",
+            "beschreibung": "Achsensymmetrie erkennen, Symmetrieachsen bestimmen und Figuren spiegeln"
+          },
+          {
+            "displayname": "Punktsymmetrie",
+            "beschreibung": "Punktsymmetrie erkennen und das Symmetriezentrum bestimmen"
+          },
+          {
+            "displayname": "Flächeninhalt und Umfang",
+            "beschreibung": "Flächeninhalt und Umfang von Rechtecken und zusammengesetzten Figuren berechnen"
+          },
+          {
+            "displayname": "Würfel und Quader berechnen",
+            "beschreibung": "Oberfläche und Volumen von Würfeln und Quadern berechnen"
+          }
+        ],
+        "stunden_pro_jahr": 22,
+        "status": "ausstehend"
+      },
+      "Brüche – Einführung": {
+        "unterthemen": [
+          {
+            "displayname": "Brüche als Anteile darstellen",
+            "beschreibung": "Bruchteile eines Ganzen mit Kreisen und Rechtecken veranschaulichen"
+          },
+          {
+            "displayname": "Brüche erweitern und kürzen",
+            "beschreibung": "Brüche mit gemeinsamem Faktor erweitern und durch den ggT kürzen"
+          },
+          {
+            "displayname": "Brüche vergleichen und ordnen",
+            "beschreibung": "Brüche durch Gleichnamigmachen vergleichen und der Größe nach ordnen"
+          },
+          {
+            "displayname": "Gemischte Zahlen umwandeln",
+            "beschreibung": "Zwischen gemischten Zahlen und unechten Brüchen hin- und her umwandeln"
+          },
+          {
+            "displayname": "Dezimalbrüche umwandeln",
+            "beschreibung": "Brüche in Dezimalzahlen und Dezimalzahlen zurück in Brüche umwandeln"
+          }
+        ],
+        "stunden_pro_jahr": 18,
+        "status": "ausstehend"
+      },
+      "Daten und Diagramme": {
+        "unterthemen": [
+          {
+            "displayname": "Daten erheben",
+            "beschreibung": "Daten mit Strichliste und Urliste systematisch erfassen und ordnen"
+          },
+          {
+            "displayname": "Diagramme ablesen",
+            "beschreibung": "Säulen-, Balken- und Liniendiagramme lesen und interpretieren"
+          },
+          {
+            "displayname": "Diagramme erstellen",
+            "beschreibung": "Passende Diagramme selbst zeichnen, beschriften und beschreiben"
+          },
+          {
+            "displayname": "Darstellungsform wählen",
+            "beschreibung": "Die geeignete Darstellungsform für verschiedene Datensätze auswählen und begründen"
+          }
+        ],
+        "stunden_pro_jahr": 10,
+        "status": "ausstehend"
+      }
+    },
+    "6": {
+      "Brüche – Vertiefte Rechenoperationen": {
+        "unterthemen": [
+          {
+            "displayname": "Brüche addieren und subtrahieren",
+            "beschreibung": "Brüche mit gleichem und verschiedenem Nenner addieren und subtrahieren"
+          },
+          {
+            "displayname": "Brüche multiplizieren",
+            "beschreibung": "Brüche multiplizieren: Zähler mit Zähler und Nenner mit Nenner"
+          },
+          {
+            "displayname": "Brüche dividieren",
+            "beschreibung": "Brüche durch Kehrbruch-Multiplikation dividieren und vor dem Rechnen kürzen"
+          },
+          {
+            "displayname": "Bruchteile von Größen",
+            "beschreibung": "Einen Bruchteil einer Menge oder Größe berechnen (z.B. ¾ von 80 kg)"
+          },
+          {
+            "displayname": "Gemischte Zahlen verrechnen",
+            "beschreibung": "Gemischte Zahlen in Brüche umwandeln und alle Grundrechenarten anwenden"
+          }
+        ],
+        "stunden_pro_jahr": 22,
+        "status": "ausstehend"
+      },
+      "Dezimalzahlen": {
+        "unterthemen": [
+          {
+            "displayname": "Dezimalzahlen darstellen und ordnen",
+            "beschreibung": "Dezimalzahlen auf dem Zahlenstrahl verorten und der Größe nach ordnen"
+          },
+          {
+            "displayname": "Periodische Dezimalzahlen",
+            "beschreibung": "Periodische Dezimalzahlen erkennen und als Bruch schreiben"
+          },
+          {
+            "displayname": "Dezimalzahlen runden",
+            "beschreibung": "Dezimalzahlen auf eine bestimmte Nachkommastelle runden"
+          },
+          {
+            "displayname": "Multiplikation mit Zehnerzahlen",
+            "beschreibung": "Dezimalzahlen durch Kommaverschiebung mit 10, 100 und 1000 multiplizieren"
+          },
+          {
+            "displayname": "Dezimalzahlen multiplizieren und dividieren",
+            "beschreibung": "Dezimalzahlen schriftlich multiplizieren und dividieren"
+          }
+        ],
+        "stunden_pro_jahr": 15,
+        "status": "ausstehend"
+      },
+      "Prozentrechnung – Grundlagen": {
+        "unterthemen": [
+          {
+            "displayname": "Prozente, Dezimalzahlen und Brüche",
+            "beschreibung": "Prozentangaben in Dezimalzahlen und Brüche umwandeln und umgekehrt"
+          },
+          {
+            "displayname": "Prozentwert berechnen",
+            "beschreibung": "Den Prozentwert mit der Formel W = G · p/100 berechnen"
+          },
+          {
+            "displayname": "Prozentsatz bestimmen",
+            "beschreibung": "Den Prozentsatz aus Prozentwert und Grundwert ermitteln"
+          },
+          {
+            "displayname": "Prozentrechnung im Alltag",
+            "beschreibung": "Rabatt, Mehrwertsteuer und einfache Zinsrechnung in Alltagssituationen anwenden"
+          }
+        ],
+        "stunden_pro_jahr": 15,
+        "status": "ausstehend"
+      },
+      "Rationale Zahlen": {
+        "unterthemen": [
+          {
+            "displayname": "Negative Zahlen einführen",
+            "beschreibung": "Negative Zahlen in Alltagssituationen verstehen und auf dem Zahlenstrahl verorten"
+          },
+          {
+            "displayname": "Rationale Zahlen ordnen",
+            "beschreibung": "Rationale Zahlen darstellen und nach ihrer Größe ordnen"
+          },
+          {
+            "displayname": "Addition und Subtraktion rationaler Zahlen",
+            "beschreibung": "Rationale Zahlen mit korrekten Vorzeichen addieren und subtrahieren"
+          },
+          {
+            "displayname": "Multiplikation und Division rationaler Zahlen",
+            "beschreibung": "Rationale Zahlen multiplizieren und dividieren unter Beachtung der Vorzeichenregeln"
+          },
+          {
+            "displayname": "Rechengesetze nutzen",
+            "beschreibung": "Kommutativ-, Assoziativ- und Distributivgesetz vorteilhaft einsetzen"
+          }
+        ],
+        "stunden_pro_jahr": 20,
+        "status": "ausstehend"
+      },
+      "Geometrie – Kreis und Winkel": {
+        "unterthemen": [
+          {
+            "displayname": "Kreise zeichnen und benennen",
+            "beschreibung": "Kreise mit dem Zirkel zeichnen; Mittelpunkt, Radius und Durchmesser benennen"
+          },
+          {
+            "displayname": "Winkel messen und zeichnen",
+            "beschreibung": "Winkel mit dem Geodreieck schätzen, messen und zeichnen"
+          },
+          {
+            "displayname": "Winkelarten",
+            "beschreibung": "Spitze, rechte, stumpfe, gestreckte und überstumpfte Winkel unterscheiden"
+          },
+          {
+            "displayname": "Kreisdiagramme",
+            "beschreibung": "Kreisdiagramme aus relativen Häufigkeiten erstellen und interpretieren"
+          }
+        ],
+        "stunden_pro_jahr": 14,
+        "status": "ausstehend"
+      },
+      "Statistik – Häufigkeiten und Kenngrößen": {
+        "unterthemen": [
+          {
+            "displayname": "Absolute und relative Häufigkeit",
+            "beschreibung": "Absolute und relative Häufigkeiten berechnen und in Tabellen eintragen"
+          },
+          {
+            "displayname": "Arithmetisches Mittel",
+            "beschreibung": "Den Durchschnitt (arithmetisches Mittel) einer Datenmenge berechnen"
+          },
+          {
+            "displayname": "Median und Spannweite",
+            "beschreibung": "Median und Spannweite einer Datenmenge bestimmen und interpretieren"
+          },
+          {
+            "displayname": "Boxplots",
+            "beschreibung": "Quartile, Minimum und Maximum ablesen sowie Boxplots erstellen und deuten"
+          }
+        ],
+        "stunden_pro_jahr": 12,
+        "status": "ausstehend"
+      }
+    },
+    "7": {
+      "Terme und Gleichungen": {
+        "unterthemen": [
+          {
+            "displayname": "Terme aufstellen",
+            "beschreibung": "Terme mit Variablen als Platzhalter für Sachsituationen aufstellen und beschreiben"
+          },
+          {
+            "displayname": "Termwerte und Zusammenfassen",
+            "beschreibung": "Termwerte berechnen und gleichartige Terme zusammenfassen"
+          },
+          {
+            "displayname": "Distributivgesetz anwenden",
+            "beschreibung": "Klammern durch Ausmultiplizieren auflösen und Terme durch Ausklammern vereinfachen"
+          },
+          {
+            "displayname": "Lineare Gleichungen lösen",
+            "beschreibung": "Lineare Gleichungen durch Äquivalenzumformungen systematisch lösen"
+          },
+          {
+            "displayname": "Gleichungen in Sachaufgaben",
+            "beschreibung": "Textaufgaben durch Aufstellen und Lösen linearer Gleichungen modellieren"
+          },
+          {
+            "displayname": "Bruchgleichungen und Ungleichungen",
+            "beschreibung": "Einfache Bruchgleichungen und lineare Ungleichungen lösen"
+          }
+        ],
+        "stunden_pro_jahr": 25,
+        "status": "ausstehend"
+      },
+      "Proportionale und antiproportionale Zuordnungen": {
+        "unterthemen": [
+          {
+            "displayname": "Proportionale Zuordnungen",
+            "beschreibung": "Proportionale Zuordnungen in Wertetabellen und Graphen darstellen"
+          },
+          {
+            "displayname": "Proportionalitätsfaktor",
+            "beschreibung": "Den Proportionalitätsfaktor und die Zuordnungsvorschrift bestimmen"
+          },
+          {
+            "displayname": "Dreisatz (proportional)",
+            "beschreibung": "Den Dreisatz bei proportionalen Zuordnungen anwenden"
+          },
+          {
+            "displayname": "Antiproportionale Zuordnungen",
+            "beschreibung": "Antiproportionale Zuordnungen erkennen und mit dem Dreisatz berechnen"
+          },
+          {
+            "displayname": "Dreisatz (antiproportional)",
+            "beschreibung": "Den Dreisatz bei antiproportionalen Zuordnungen anwenden"
+          }
+        ],
+        "stunden_pro_jahr": 20,
+        "status": "ausstehend"
+      },
+      "Prozentrechnung und Zinsrechnung": {
+        "unterthemen": [
+          {
+            "displayname": "Drei Grundaufgaben der Prozentrechnung",
+            "beschreibung": "Grundwert, Prozentwert und Prozentsatz in allen Varianten berechnen"
+          },
+          {
+            "displayname": "Prozentualer Anteil und Vergleich",
+            "beschreibung": "Prozentuale Anteile berechnen und Größen prozentual miteinander vergleichen"
+          },
+          {
+            "displayname": "Einfache Zinsrechnung",
+            "beschreibung": "Zinsen aus Kapital, Zinssatz und Laufzeit berechnen"
+          },
+          {
+            "displayname": "Sachaufgaben zur Prozentrechnung",
+            "beschreibung": "Rabatt, Preiserhöhung und Preisnachlass in Sachkontexten berechnen"
+          }
+        ],
+        "stunden_pro_jahr": 18,
+        "status": "ausstehend"
+      },
+      "Geometrie – Dreiecke und Kreise": {
+        "unterthemen": [
+          {
+            "displayname": "Winkel an Geradenkreuzungen",
+            "beschreibung": "Scheitel-, Neben- und Stufenwinkel an parallelen Geraden erkennen und berechnen"
+          },
+          {
+            "displayname": "Winkelsummen in Vielecken",
+            "beschreibung": "Winkelsummen in Dreiecken (180°) und Vierecken (360°) begründen und nutzen"
+          },
+          {
+            "displayname": "Kongruenzsätze",
+            "beschreibung": "Dreieckskongruenz mit den Sätzen SSS, SWS, WSW und SsW nachweisen"
+          },
+          {
+            "displayname": "Dreiecke konstruieren",
+            "beschreibung": "Dreiecke nach Kongruenzsätzen mit Zirkel und Lineal konstruieren"
+          },
+          {
+            "displayname": "Besondere Linien im Dreieck",
+            "beschreibung": "Mittelsenkrechte und Winkelhalbierende im Dreieck konstruieren"
+          },
+          {
+            "displayname": "Inkreis und Umkreis",
+            "beschreibung": "Inkreis und Umkreis eines Dreiecks konstruieren und interpretieren"
+          },
+          {
+            "displayname": "Höhen und Seitenhalbierende",
+            "beschreibung": "Höhen, Seitenhalbierende und Schwerpunkt eines Dreiecks bestimmen"
+          }
+        ],
+        "stunden_pro_jahr": 22,
+        "status": "ausstehend"
+      },
+      "Stochastik – Wahrscheinlichkeit": {
+        "unterthemen": [
+          {
+            "displayname": "Zufallsexperimente beschreiben",
+            "beschreibung": "Zufallsexperimente mit Ergebnissen und Ereignissen beschreiben und darstellen"
+          },
+          {
+            "displayname": "Laplace-Wahrscheinlichkeit",
+            "beschreibung": "Wahrscheinlichkeit bei Laplace-Experimenten als günstige durch mögliche Fälle berechnen"
+          },
+          {
+            "displayname": "Gegenereignis und Summenregel",
+            "beschreibung": "Das Gegenereignis berechnen und die Summenregel der Wahrscheinlichkeit anwenden"
+          },
+          {
+            "displayname": "Baumdiagramm und Pfadregeln",
+            "beschreibung": "Mehrstufige Zufallsexperimente mit Baumdiagramm und Pfadregeln berechnen"
+          }
+        ],
+        "stunden_pro_jahr": 12,
+        "status": "ausstehend"
+      }
+    },
+    "8": {
+      "Termumformungen und binomische Formeln": {
+        "unterthemen": [
+          {
+            "displayname": "Klammern auflösen",
+            "beschreibung": "Plus- und Minusklammern auflösen und Terme vereinfachen"
+          },
+          {
+            "displayname": "Terme multiplizieren und dividieren",
+            "beschreibung": "Terme mit dem Distributivgesetz multiplizieren und dividieren"
+          },
+          {
+            "displayname": "Klammer mal Klammer",
+            "beschreibung": "Produkte zweier Klammernterme durch Ausmultiplizieren berechnen"
+          },
+          {
+            "displayname": "Erste binomische Formel",
+            "beschreibung": "Die Formel (a + b)² = a² + 2ab + b² anwenden und rückwärts erkennen"
+          },
+          {
+            "displayname": "Zweite binomische Formel",
+            "beschreibung": "Die Formel (a − b)² = a² − 2ab + b² anwenden und rückwärts erkennen"
+          },
+          {
+            "displayname": "Dritte binomische Formel",
+            "beschreibung": "Die Formel (a + b)(a − b) = a² − b² anwenden und zum Faktorisieren nutzen"
+          },
+          {
+            "displayname": "Terme ausklammern",
+            "beschreibung": "Den größten gemeinsamen Faktor ausklammern und Terme faktorisieren"
+          }
+        ],
+        "stunden_pro_jahr": 22,
+        "status": "ausstehend"
+      },
+      "Lineare Funktionen": {
+        "unterthemen": [
+          {
+            "displayname": "Begriff der Funktion",
+            "beschreibung": "Funktion als eindeutige Zuordnung mit Definitions- und Wertemenge verstehen"
+          },
+          {
+            "displayname": "Proportionale Funktionen",
+            "beschreibung": "Proportionale Funktionen y = mx in Tabelle und Graph darstellen"
+          },
+          {
+            "displayname": "Lineare Funktion y = mx + b",
+            "beschreibung": "Steigung m und y-Achsenabschnitt b einer linearen Funktion bestimmen"
+          },
+          {
+            "displayname": "Graph einer linearen Funktion",
+            "beschreibung": "Den Graphen einer linearen Funktion aus der Gleichung zeichnen"
+          },
+          {
+            "displayname": "Gleichung aus dem Graph ablesen",
+            "beschreibung": "Die Gleichung einer linearen Funktion aus dem Graphen ablesen"
+          },
+          {
+            "displayname": "Schnittpunkt zweier Geraden",
+            "beschreibung": "Den Schnittpunkt zweier linearer Funktionen durch Gleichsetzen berechnen"
+          },
+          {
+            "displayname": "Lineare Funktionen anwenden",
+            "beschreibung": "Tarife, Kosten und Fahrtstrecken mit linearen Funktionen modellieren"
+          }
+        ],
+        "stunden_pro_jahr": 25,
+        "status": "ausstehend"
+      },
+      "Lineare Gleichungssysteme": {
+        "unterthemen": [
+          {
+            "displayname": "Grafische Lösung",
+            "beschreibung": "Lineare Gleichungssysteme grafisch als Schnittpunkt zweier Geraden lösen"
+          },
+          {
+            "displayname": "Einsetzungsverfahren",
+            "beschreibung": "Eine Variable aus einer Gleichung herauslösen und in die andere einsetzen"
+          },
+          {
+            "displayname": "Gleichsetzungsverfahren",
+            "beschreibung": "Beide Gleichungen gleichsetzen und nach einer Variable auflösen"
+          },
+          {
+            "displayname": "Additionsverfahren",
+            "beschreibung": "Gleichungen addieren oder subtrahieren, um eine Variable zu eliminieren"
+          },
+          {
+            "displayname": "Sachaufgaben mit Gleichungssystemen",
+            "beschreibung": "Sachsituationen als lineares Gleichungssystem aufstellen und lösen"
+          }
+        ],
+        "stunden_pro_jahr": 20,
+        "status": "ausstehend"
+      },
+      "Geometrie – Flächeninhalt und Ähnlichkeit": {
+        "unterthemen": [
+          {
+            "displayname": "Flächeninhalt von Dreiecken",
+            "beschreibung": "Dreiecksflächeninhalt mit A = ½ · g · h berechnen"
+          },
+          {
+            "displayname": "Flächeninhalt von Parallelogrammen",
+            "beschreibung": "Flächeninhalt von Parallelogrammen mit A = g · h berechnen"
+          },
+          {
+            "displayname": "Flächeninhalt von Trapezen",
+            "beschreibung": "Trapezflächeninhalt mit A = ½ · (a + c) · h berechnen"
+          },
+          {
+            "displayname": "Ähnliche Figuren",
+            "beschreibung": "Ähnliche Figuren erkennen und den Ähnlichkeitsfaktor bestimmen"
+          },
+          {
+            "displayname": "Zentrische Streckung",
+            "beschreibung": "Bildpunkte bei zentrischer Streckung konstruieren und den Streckungsfaktor bestimmen"
+          },
+          {
+            "displayname": "Strahlensätze anwenden",
+            "beschreibung": "Seitenverhältnisse mit dem Strahlensatz (V-Figur und X-Figur) berechnen"
+          }
+        ],
+        "stunden_pro_jahr": 20,
+        "status": "ausstehend"
+      },
+      "Stochastik – Wahrscheinlichkeit vertieft": {
+        "unterthemen": [
+          {
+            "displayname": "Empirische Wahrscheinlichkeit",
+            "beschreibung": "Relative Häufigkeit aus Experimenten als empirische Wahrscheinlichkeit nutzen"
+          },
+          {
+            "displayname": "Baumdiagramm vertieft",
+            "beschreibung": "Mehrstufige Zufallsexperimente mit vollständigem Baumdiagramm berechnen"
+          },
+          {
+            "displayname": "Produkt- und Summenregel",
+            "beschreibung": "Produkt- und Summenregel der Wahrscheinlichkeit sicher anwenden"
+          },
+          {
+            "displayname": "Kombinierte Ereignisse",
+            "beschreibung": "Schnitt- und Vereinigungsmenge von Ereignissen berechnen und interpretieren"
+          }
+        ],
+        "stunden_pro_jahr": 10,
+        "status": "ausstehend"
+      }
+    },
+    "9": {
+      "Satz des Pythagoras": {
+        "unterthemen": [
+          {
+            "displayname": "Rechtwinklige Dreiecke benennen",
+            "beschreibung": "Hypotenuse und Katheten im rechtwinkligen Dreieck benennen und identifizieren"
+          },
+          {
+            "displayname": "Hypotenuse berechnen",
+            "beschreibung": "Die Hypotenuse mit c² = a² + b² berechnen"
+          },
+          {
+            "displayname": "Kathete berechnen",
+            "beschreibung": "Eine Kathete mit a = √(c² − b²) berechnen"
+          },
+          {
+            "displayname": "Rechtwinklige Dreiecke nachweisen",
+            "beschreibung": "Mit der Umkehrung des Satzes prüfen, ob ein Dreieck rechtwinklig ist"
+          },
+          {
+            "displayname": "Abstände in der Ebene",
+            "beschreibung": "Abstände und Diagonalen im Koordinatensystem mit dem Satz des Pythagoras berechnen"
+          },
+          {
+            "displayname": "Raumdiagonalen berechnen",
+            "beschreibung": "Die Raumdiagonale von Würfel und Quader mit dem Satz des Pythagoras berechnen"
+          },
+          {
+            "displayname": "Höhen- und Kathetensatz",
+            "beschreibung": "Höhensatz und Kathetensatz im rechtwinkligen Dreieck anwenden"
+          }
+        ],
+        "stunden_pro_jahr": 18,
+        "status": "ausstehend"
+      },
+      "Wurzeln und Potenzen": {
+        "unterthemen": [
+          {
+            "displayname": "Quadratwurzeln",
+            "beschreibung": "Quadratwurzeln definieren und mit dem Heron-Verfahren annähern"
+          },
+          {
+            "displayname": "Irrationale Zahlen",
+            "beschreibung": "Zahlen wie √2 als irrationale Zahlen verstehen, die sich nicht als Bruch darstellen lassen"
+          },
+          {
+            "displayname": "Wurzelgesetze",
+            "beschreibung": "Wurzeln mit Produkt- und Quotientenregel vereinfachen"
+          },
+          {
+            "displayname": "Teilweises Radizieren",
+            "beschreibung": "Wurzelausdrücke durch teilweises Radizieren vereinfachen"
+          },
+          {
+            "displayname": "Potenzgesetze",
+            "beschreibung": "Potenzgesetze für gleiche Basis, gleiche Exponenten und Potenz einer Potenz anwenden"
+          },
+          {
+            "displayname": "Wissenschaftliche Schreibweise",
+            "beschreibung": "Zahlen in der Form a · 10ⁿ schreiben und damit rechnen"
+          },
+          {
+            "displayname": "Rationale Exponenten",
+            "beschreibung": "Potenzen mit rationalen Exponenten als n-te Wurzeln verstehen und berechnen"
+          }
+        ],
+        "stunden_pro_jahr": 20,
+        "status": "ausstehend"
+      },
+      "Quadratische Funktionen": {
+        "unterthemen": [
+          {
+            "displayname": "Normalparabel",
+            "beschreibung": "Die Normalparabel y = x² mit Wertetabelle, Symmetrieachse und Scheitelpunkt darstellen"
+          },
+          {
+            "displayname": "Streckung und Stauchung",
+            "beschreibung": "Den Einfluss des Parameters a auf die Parabel y = ax² verstehen"
+          },
+          {
+            "displayname": "Verschiebung in y-Richtung",
+            "beschreibung": "Parabeln y = x² + c als Verschiebung der Normalparabel beschreiben"
+          },
+          {
+            "displayname": "Scheitelpunktform",
+            "beschreibung": "Parabeln in der Scheitelpunktform y = a(x − d)² + e darstellen und interpretieren"
+          },
+          {
+            "displayname": "Quadratische Ergänzung",
+            "beschreibung": "Die allgemeine Form durch quadratische Ergänzung in Scheitelpunktform umwandeln"
+          },
+          {
+            "displayname": "Optimierungsaufgaben",
+            "beschreibung": "Maximale und minimale Werte über den Scheitelpunkt einer Parabel bestimmen"
+          },
+          {
+            "displayname": "Quadratische Funktion aus Punkten",
+            "beschreibung": "Eine quadratische Funktion aus gegebenen Punkten durch ein Gleichungssystem bestimmen"
+          }
+        ],
+        "stunden_pro_jahr": 25,
+        "status": "ausstehend"
+      },
+      "Kreisberechnungen und Körper": {
+        "unterthemen": [
+          {
+            "displayname": "Kreisumfang und Kreisfläche",
+            "beschreibung": "Kreisumfang U = 2πr und Kreisfläche A = πr² berechnen"
+          },
+          {
+            "displayname": "Kreissektor berechnen",
+            "beschreibung": "Bogenlänge und Flächeninhalt eines Kreissektors aus dem Mittelpunktswinkel berechnen"
+          },
+          {
+            "displayname": "Prisma berechnen",
+            "beschreibung": "Oberfläche und Volumen eines Prismas mit verschiedenen Grundflächen berechnen"
+          },
+          {
+            "displayname": "Zylinder berechnen",
+            "beschreibung": "Oberfläche (Mantel + 2 Kreisflächen) und Volumen V = πr²h eines Zylinders berechnen"
+          },
+          {
+            "displayname": "Pyramide berechnen",
+            "beschreibung": "Volumen V = ⅓ · G · h und Oberfläche einer Pyramide berechnen"
+          },
+          {
+            "displayname": "Kegel berechnen",
+            "beschreibung": "Volumen V = ⅓ · πr² · h und Mantelfläche eines Kegels berechnen"
+          },
+          {
+            "displayname": "Kugel berechnen",
+            "beschreibung": "Volumen V = ⁴⁄₃ · πr³ und Oberfläche O = 4πr² einer Kugel berechnen"
+          }
+        ],
+        "stunden_pro_jahr": 22,
+        "status": "ausstehend"
+      },
+      "Stochastik – Bedingte Wahrscheinlichkeit": {
+        "unterthemen": [
+          {
+            "displayname": "Bedingte Wahrscheinlichkeit",
+            "beschreibung": "Bedingte Wahrscheinlichkeit P(A|B) definieren und berechnen"
+          },
+          {
+            "displayname": "Abhängige und unabhängige Ereignisse",
+            "beschreibung": "Abhängige und unabhängige Ereignisse im Baumdiagramm darstellen und unterscheiden"
+          },
+          {
+            "displayname": "Vierfeldertafel",
+            "beschreibung": "Häufigkeiten und Wahrscheinlichkeiten in der Vierfeldertafel eintragen und ablesen"
+          },
+          {
+            "displayname": "Stochastische Unabhängigkeit prüfen",
+            "beschreibung": "Stochastische Unabhängigkeit über die Bedingung P(A|B) = P(A) nachweisen"
+          }
+        ],
+        "stunden_pro_jahr": 12,
+        "status": "ausstehend"
+      }
+    },
+    "10": {
+      "Quadratische Gleichungen": {
+        "unterthemen": [
+          {
+            "displayname": "Quadratische Gleichungen grafisch lösen",
+            "beschreibung": "Nullstellen einer quadratischen Funktion grafisch als Schnittpunkte mit der x-Achse bestimmen"
+          },
+          {
+            "displayname": "Besondere Formen lösen",
+            "beschreibung": "Gleichungen vom Typ ax² + bx = 0 und ax² − c = 0 algebraisch lösen"
+          },
+          {
+            "displayname": "pq-Formel anwenden",
+            "beschreibung": "Quadratische Gleichungen mit der pq-Formel x = −p/2 ± √(p²/4 − q) lösen"
+          },
+          {
+            "displayname": "Diskriminante",
+            "beschreibung": "Mit der Diskriminante die Anzahl der Lösungen (2, 1 oder 0) bestimmen"
+          },
+          {
+            "displayname": "Faktorisieren mit Nullstellen",
+            "beschreibung": "Quadratische Ausdrücke mithilfe der Nullstellen in Linearfaktoren zerlegen"
+          },
+          {
+            "displayname": "Bruchgleichungen",
+            "beschreibung": "Bruchgleichungen lösen, die auf quadratische Gleichungen führen"
+          },
+          {
+            "displayname": "Quadratische Gleichungen anwenden",
+            "beschreibung": "Flächen- und Sachaufgaben mit quadratischem Zusammenhang modellieren und lösen"
+          }
+        ],
+        "stunden_pro_jahr": 20,
+        "status": "ausstehend"
+      },
+      "Zentrische Streckung und Ähnlichkeit": {
+        "unterthemen": [
+          {
+            "displayname": "Zentrische Streckung konstruieren",
+            "beschreibung": "Bildpunkte bei zentrischer Streckung konstruieren und Streckungsfaktor k bestimmen"
+          },
+          {
+            "displayname": "Eigenschaften der zentrischen Streckung",
+            "beschreibung": "Winkelerhaltung und Längenverhältnisse bei zentrischer Streckung beschreiben"
+          },
+          {
+            "displayname": "Ähnliche Dreiecke",
+            "beschreibung": "Ähnliche Dreiecke mit Winkelsatz und Seitenverhältnissen erkennen und begründen"
+          },
+          {
+            "displayname": "Strahlensatz V-Figur",
+            "beschreibung": "Verhältnisse bei parallelen Geraden mit dem Strahlensatz (V-Figur) berechnen"
+          },
+          {
+            "displayname": "Strahlensatz X-Figur",
+            "beschreibung": "Verhältnisse bei sich schneidenden Geraden mit dem Strahlensatz (X-Figur) berechnen"
+          }
+        ],
+        "stunden_pro_jahr": 15,
+        "status": "ausstehend"
+      },
+      "Exponentialfunktionen und Logarithmus": {
+        "unterthemen": [
+          {
+            "displayname": "Exponentielles Wachstum",
+            "beschreibung": "Exponentielles Wachstum y = a · bˣ mit Wachstumsfaktor und Anfangswert beschreiben"
+          },
+          {
+            "displayname": "Wachstumsarten vergleichen",
+            "beschreibung": "Exponentielles und lineares Wachstum in Tabellen und Graphen vergleichen"
+          },
+          {
+            "displayname": "Exponentialgleichungen näherungsweise lösen",
+            "beschreibung": "Exponentialgleichungen durch Probieren und Wertetabellen näherungsweise lösen"
+          },
+          {
+            "displayname": "Logarithmus einführen",
+            "beschreibung": "Den Logarithmus log_b(x) als Umkehrung der Potenz verstehen und berechnen"
+          },
+          {
+            "displayname": "Exponentialgleichungen exakt lösen",
+            "beschreibung": "Einfache Exponentialgleichungen exakt mit dem Logarithmus lösen"
+          },
+          {
+            "displayname": "Anwendungen: Wachstum und Zerfall",
+            "beschreibung": "Bevölkerungswachstum, Zinseszins und radioaktiven Zerfall modellieren"
+          }
+        ],
+        "stunden_pro_jahr": 22,
+        "status": "ausstehend"
+      },
+      "Trigonometrie": {
+        "unterthemen": [
+          {
+            "displayname": "Sinus, Kosinus und Tangens",
+            "beschreibung": "Sinus, Kosinus und Tangens im rechtwinkligen Dreieck definieren"
+          },
+          {
+            "displayname": "Winkel trigonometrisch berechnen",
+            "beschreibung": "Unbekannte Winkel und Seiten im rechtwinkligen Dreieck mit Sinus, Kosinus und Tangens berechnen"
+          },
+          {
+            "displayname": "Steigungswinkel bestimmen",
+            "beschreibung": "Den Steigungswinkel einer Geraden mit dem Tangens berechnen"
+          },
+          {
+            "displayname": "Werte am Einheitskreis",
+            "beschreibung": "Sinus- und Kosinuswerte für 0°, 30°, 45°, 60° und 90° am Einheitskreis ableiten"
+          },
+          {
+            "displayname": "Sinus- und Kosinusfunktion",
+            "beschreibung": "Sinusfunktion y = sin(x) und Kosinusfunktion y = cos(x) als Graphen darstellen"
+          },
+          {
+            "displayname": "Allgemeine Sinusfunktion",
+            "beschreibung": "Parameter a, b, c, d in y = a·sin(b(x−c))+d als Amplitude, Periode und Verschiebung deuten"
+          },
+          {
+            "displayname": "Kosinussatz anwenden",
+            "beschreibung": "Den Kosinussatz a² = b² + c² − 2bc·cos(α) auf allgemeine Dreiecke anwenden"
+          },
+          {
+            "displayname": "Trigonometrie in Anwendungen",
+            "beschreibung": "Trigonometrische Berechnungen in Alltags- und Technikaufgaben anwenden"
+          }
+        ],
+        "stunden_pro_jahr": 25,
+        "status": "ausstehend"
+      },
+      "Stochastik – Vertiefung": {
+        "unterthemen": [
+          {
+            "displayname": "Statistische Darstellungen beurteilen",
+            "beschreibung": "Diagramme und statistische Aussagen kritisch beurteilen und Fehler erkennen"
+          },
+          {
+            "displayname": "Bedingte Wahrscheinlichkeit vertiefen",
+            "beschreibung": "Bedingte Wahrscheinlichkeit mit der Formel P(A|B) = P(A∩B)/P(B) berechnen"
+          },
+          {
+            "displayname": "Stochastische Unabhängigkeit nachweisen",
+            "beschreibung": "Stochastische Unabhängigkeit formell über die Vierfeldertafel nachweisen"
+          },
+          {
+            "displayname": "Ziehen ohne Zurücklegen",
+            "beschreibung": "Mehrstufige Zufallsexperimente ohne Zurücklegen mit dem Baumdiagramm berechnen"
+          }
+        ],
+        "stunden_pro_jahr": 15,
+        "status": "ausstehend"
+      }
+    },
+    "EF": {
+      "Funktionen und ganzrationale Funktionen": {
+        "unterthemen": [
+          {
+            "displayname": "Funktionsbegriff wiederholen",
+            "beschreibung": "Funktion als eindeutige Zuordnung mit Definitions- und Wertemenge wiederholen"
+          },
+          {
+            "displayname": "Ganzrationale Funktionen",
+            "beschreibung": "Grad, Koeffizienten und Leitkoeffizient ganzrationaler Funktionen bestimmen"
+          },
+          {
+            "displayname": "Nullstellen berechnen",
+            "beschreibung": "Nullstellen durch Ausklammern, pq-Formel und Polynomdivision bestimmen"
+          },
+          {
+            "displayname": "Symmetrie von Funktionen",
+            "beschreibung": "Achsen- und Punktsymmetrie von Funktionsgraphen erkennen und begründen"
+          },
+          {
+            "displayname": "Transformationen von Graphen",
+            "beschreibung": "Funktionsgraphen verschieben, strecken und spiegeln"
+          },
+          {
+            "displayname": "Schnittpunkte berechnen",
+            "beschreibung": "Schnittpunkte zweier Funktionsgraphen durch Gleichsetzen berechnen"
+          }
+        ],
+        "stunden_pro_jahr": 25,
+        "status": "ausstehend"
+      },
+      "Differentialrechnung – Einführung": {
+        "unterthemen": [
+          {
+            "displayname": "Durchschnittliche Änderungsrate",
+            "beschreibung": "Die durchschnittliche Änderungsrate als Differenzenquotienten berechnen und deuten"
+          },
+          {
+            "displayname": "Momentane Änderungsrate",
+            "beschreibung": "Die Ableitung als Grenzwert des Differenzenquotienten verstehen und berechnen"
+          },
+          {
+            "displayname": "Potenzregel",
+            "beschreibung": "Ableitungen von Potenzfunktionen xⁿ mit der Potenzregel berechnen"
+          },
+          {
+            "displayname": "Summenregel",
+            "beschreibung": "Die Ableitung einer Summe als Summe der einzelnen Ableitungen berechnen"
+          },
+          {
+            "displayname": "Faktorregel",
+            "beschreibung": "Konstante Faktoren beim Ableiten unverändert durchziehen"
+          },
+          {
+            "displayname": "Höhere Ableitungen",
+            "beschreibung": "Zweite und höhere Ableitungen f'', f''' berechnen und geometrisch interpretieren"
+          }
+        ],
+        "stunden_pro_jahr": 20,
+        "status": "ausstehend"
+      },
+      "Kurvendiskussion": {
+        "unterthemen": [
+          {
+            "displayname": "Monotonie",
+            "beschreibung": "Monotoniebereiche über f'(x) > 0 (steigend) und f'(x) < 0 (fallend) bestimmen"
+          },
+          {
+            "displayname": "Extremstellen",
+            "beschreibung": "Extremstellen über f'(x₀) = 0 und das Vorzeichen von f''(x₀) klassifizieren"
+          },
+          {
+            "displayname": "Wendepunkte",
+            "beschreibung": "Wendepunkte über f''(xw) = 0 und den Vorzeichenwechsel von f'' bestimmen"
+          },
+          {
+            "displayname": "Randverhalten",
+            "beschreibung": "Das Verhalten einer Funktion für x → ±∞ über den Leitterm bestimmen"
+          },
+          {
+            "displayname": "Vollständige Kurvendiskussion",
+            "beschreibung": "Alle Eigenschaften einer Funktion systematisch untersuchen und den Graphen skizzieren"
+          }
+        ],
+        "stunden_pro_jahr": 22,
+        "status": "ausstehend"
+      },
+      "Stochastik – Einführungsphase": {
+        "unterthemen": [
+          {
+            "displayname": "Wahrscheinlichkeitsgrundlagen",
+            "beschreibung": "Grundbegriffe der Wahrscheinlichkeitsrechnung, Baumdiagramm und Pfadregeln wiederholen"
+          },
+          {
+            "displayname": "Bedingte Wahrscheinlichkeit",
+            "beschreibung": "Bedingte Wahrscheinlichkeit P(A|B) definieren und in der Vierfeldertafel darstellen"
+          },
+          {
+            "displayname": "Mehrstufige Experimente",
+            "beschreibung": "Zufallsexperimente mit und ohne Zurücklegen mit dem Baumdiagramm berechnen"
+          },
+          {
+            "displayname": "Zufallsgröße und Verteilung",
+            "beschreibung": "Zufallsgröße X definieren und die Wahrscheinlichkeitsverteilung P(X = k) aufstellen"
+          }
+        ],
+        "stunden_pro_jahr": 20,
+        "status": "ausstehend"
+      }
+    },
+    "Q1": {
+      "Analysis – Ableitungsregeln und Anwendungen": {
+        "unterthemen": [
+          {
+            "displayname": "Produktregel",
+            "beschreibung": "Die Produktregel (u·v)' = u'·v + u·v' anwenden"
+          },
+          {
+            "displayname": "Quotientenregel",
+            "beschreibung": "Die Quotientenregel (u/v)' = (u'v − uv') / v² anwenden"
+          },
+          {
+            "displayname": "Kettenregel",
+            "beschreibung": "Die Kettenregel (f(g(x)))' = f'(g(x)) · g'(x) auf zusammengesetzte Funktionen anwenden"
+          },
+          {
+            "displayname": "Gebrochen-rationale Funktionen",
+            "beschreibung": "Definitionslücken, Polstellen und Asymptoten gebrochen-rationaler Funktionen analysieren"
+          },
+          {
+            "displayname": "Optimierungsaufgaben",
+            "beschreibung": "Maximale und minimale Werte in Sachsituationen durch Ableitung null setzen bestimmen"
+          }
+        ],
+        "stunden_pro_jahr": 25,
+        "status": "ausstehend"
+      },
+      "Exponential- und Logarithmusfunktionen": {
+        "unterthemen": [
+          {
+            "displayname": "Natürliche Exponentialfunktion",
+            "beschreibung": "Die Funktion f(x) = eˣ, ihren Graphen und die Ableitung (eˣ)' = eˣ kennen"
+          },
+          {
+            "displayname": "Allgemeine Exponentialfunktionen",
+            "beschreibung": "Allgemeine Exponentialfunktionen f(x) = aˣ darstellen und den Basiswechsel anwenden"
+          },
+          {
+            "displayname": "Natürlicher Logarithmus",
+            "beschreibung": "Den natürlichen Logarithmus ln(x) als Umkehrfunktion von eˣ verstehen"
+          },
+          {
+            "displayname": "Ableitung des Logarithmus",
+            "beschreibung": "Die Ableitung (ln x)' = 1/x anwenden und auf Verkettungen übertragen"
+          },
+          {
+            "displayname": "Exponential- und Logarithmusgleichungen",
+            "beschreibung": "Gleichungen mit e und ln durch Umkehroperationen algebraisch lösen"
+          },
+          {
+            "displayname": "Wachstum und Zerfall modellieren",
+            "beschreibung": "Exponentielles Wachstum, Zerfall und Halbwertszeit in Sachkontexten modellieren"
+          }
+        ],
+        "stunden_pro_jahr": 22,
+        "status": "ausstehend"
+      },
+      "Integralrechnung": {
+        "unterthemen": [
+          {
+            "displayname": "Stammfunktion",
+            "beschreibung": "Die Stammfunktion F(x) mit F'(x) = f(x) verstehen und bestimmen"
+          },
+          {
+            "displayname": "Unbestimmtes Integral",
+            "beschreibung": "Das unbestimmte Integral ∫f(x)dx als Menge aller Stammfunktionen deuten"
+          },
+          {
+            "displayname": "Integrationsregeln",
+            "beschreibung": "Potenz-, Summen- und Faktorregel zur Integration anwenden"
+          },
+          {
+            "displayname": "Bestimmtes Integral",
+            "beschreibung": "Das bestimmte Integral ∫_a^b f(x)dx als orientierten Flächeninhalt berechnen"
+          },
+          {
+            "displayname": "Hauptsatz der Analysis",
+            "beschreibung": "Den Hauptsatz der Differential- und Integralrechnung anwenden: ∫_a^b f(x)dx = F(b) − F(a)"
+          },
+          {
+            "displayname": "Fläche zwischen Graph und x-Achse",
+            "beschreibung": "Den Flächeninhalt zwischen einem Funktionsgraph und der x-Achse berechnen"
+          },
+          {
+            "displayname": "Fläche zwischen zwei Graphen",
+            "beschreibung": "Den Flächeninhalt zwischen zwei Funktionsgraphen berechnen"
+          }
+        ],
+        "stunden_pro_jahr": 25,
+        "status": "ausstehend"
+      },
+      "Analytische Geometrie – Vektoren und Geraden": {
+        "unterthemen": [
+          {
+            "displayname": "Vektoren im Raum",
+            "beschreibung": "Vektoren im dreidimensionalen Raum darstellen, addieren und mit Skalaren multiplizieren"
+          },
+          {
+            "displayname": "Betrag eines Vektors",
+            "beschreibung": "Den Betrag (Länge) eines Vektors im Raum berechnen"
+          },
+          {
+            "displayname": "Einheitsvektor",
+            "beschreibung": "Einen Vektor durch seinen Betrag dividieren, um den Einheitsvektor zu erhalten"
+          },
+          {
+            "displayname": "Skalarprodukt",
+            "beschreibung": "Das Skalarprodukt berechnen und zur Prüfung auf Orthogonalität nutzen"
+          },
+          {
+            "displayname": "Parameterdarstellung von Geraden",
+            "beschreibung": "Geraden im Raum in der Form x⃗ = p⃗ + t · u⃗ darstellen"
+          },
+          {
+            "displayname": "Lagebeziehungen von Geraden",
+            "beschreibung": "Geraden auf parallel, identisch, schneidend oder windschief untersuchen"
+          },
+          {
+            "displayname": "Schnittpunkt zweier Geraden",
+            "beschreibung": "Den Schnittpunkt zweier Geraden durch Gleichsetzen berechnen"
+          }
+        ],
+        "stunden_pro_jahr": 25,
+        "status": "ausstehend"
+      },
+      "Stochastik – Binomialverteilung": {
+        "unterthemen": [
+          {
+            "displayname": "Bernoulli-Experiment",
+            "beschreibung": "Ein Bernoulli-Experiment als Treffer-Niete-Versuch mit Wahrscheinlichkeit p verstehen"
+          },
+          {
+            "displayname": "Bernoulli-Kette",
+            "beschreibung": "Bernoulli-Ketten der Länge n mit Baumdiagramm und Pfadregeln analysieren"
+          },
+          {
+            "displayname": "Binomialkoeffizient",
+            "beschreibung": "Den Binomialkoeffizienten C(n,k) = n!/(k!(n−k)!) berechnen und deuten"
+          },
+          {
+            "displayname": "Binomialverteilung",
+            "beschreibung": "Wahrscheinlichkeiten mit B(n;p): P(X=k) = C(n,k)·pᵏ·(1−p)ⁿ⁻ᵏ berechnen"
+          },
+          {
+            "displayname": "Erwartungswert und Standardabweichung",
+            "beschreibung": "Erwartungswert μ = n·p und Standardabweichung σ = √(n·p·(1−p)) berechnen"
+          },
+          {
+            "displayname": "Kumulative Wahrscheinlichkeiten",
+            "beschreibung": "Wahrscheinlichkeiten P(X ≤ k) mit Tabelle oder Taschenrechner berechnen"
+          }
+        ],
+        "stunden_pro_jahr": 22,
+        "status": "ausstehend"
+      }
+    },
+    "Q2": {
+      "Analysis – Integralanwendungen und trigonometrische Funktionen": {
+        "unterthemen": [
+          {
+            "displayname": "Rotationsvolumen",
+            "beschreibung": "Das Volumen eines Rotationskörpers mit V = π · ∫_a^b [f(x)]² dx berechnen"
+          },
+          {
+            "displayname": "Mittlerer Funktionswert",
+            "beschreibung": "Den mittleren Funktionswert f̄ = (1/(b−a)) · ∫_a^b f(x)dx berechnen und deuten"
+          },
+          {
+            "displayname": "Sinus ableiten",
+            "beschreibung": "Die Ableitung (sin x)' = cos x herleiten und anwenden"
+          },
+          {
+            "displayname": "Kosinus ableiten",
+            "beschreibung": "Die Ableitung (cos x)' = −sin x herleiten und anwenden"
+          },
+          {
+            "displayname": "Trigonometrische Funktionen integrieren",
+            "beschreibung": "Sinus- und Kosinusfunktionen integrieren"
+          },
+          {
+            "displayname": "Allgemeine Sinusfunktion analysieren",
+            "beschreibung": "Die allgemeine Sinusfunktion y = a·sin(b(x−c))+d ableiten und integrieren"
+          }
+        ],
+        "stunden_pro_jahr": 20,
+        "status": "ausstehend"
+      },
+      "Analytische Geometrie – Ebenen und Abstände": {
+        "unterthemen": [
+          {
+            "displayname": "Parameterdarstellung von Ebenen",
+            "beschreibung": "Ebenen im Raum in der Form x⃗ = p⃗ + s·u⃗ + t·v⃗ darstellen"
+          },
+          {
+            "displayname": "Normalenvektor",
+            "beschreibung": "Den Normalenvektor einer Ebene mit dem Kreuzprodukt berechnen"
+          },
+          {
+            "displayname": "Koordinatenform der Ebene",
+            "beschreibung": "Die Koordinatenform n₁x₁ + n₂x₂ + n₃x₃ = d einer Ebene aufstellen"
+          },
+          {
+            "displayname": "Lagebeziehungen mit Ebenen",
+            "beschreibung": "Lagebeziehungen zwischen Geraden und Ebenen sowie Ebenen untereinander bestimmen"
+          },
+          {
+            "displayname": "Abstand Punkt–Ebene",
+            "beschreibung": "Den Abstand eines Punktes von einer Ebene mit der Hesse'schen Normalform berechnen"
+          },
+          {
+            "displayname": "Abstand Punkt–Gerade",
+            "beschreibung": "Den Abstand eines Punktes von einer Geraden und zwischen parallelen Geraden berechnen"
+          }
+        ],
+        "stunden_pro_jahr": 25,
+        "status": "ausstehend"
+      },
+      "Stochastik – Normalverteilung und Hypothesentests": {
+        "unterthemen": [
+          {
+            "displayname": "Normalverteilung",
+            "beschreibung": "Die Gaußsche Normalverteilung N(μ; σ²) als Glockenkurve mit Symmetrie und Wendepunkten verstehen"
+          },
+          {
+            "displayname": "Standardnormalverteilung",
+            "beschreibung": "Die Standardnormalverteilung Φ(z) mit Tabelle oder Taschenrechner nutzen"
+          },
+          {
+            "displayname": "Approximation durch Normalverteilung",
+            "beschreibung": "Die Binomialverteilung bei Erfüllung der Laplace-Bedingung durch die Normalverteilung approximieren"
+          },
+          {
+            "displayname": "Hypothesentest aufstellen",
+            "beschreibung": "Nullhypothese H₀ und Gegenhypothese H₁ formulieren und Signifikanzniveau α festlegen"
+          },
+          {
+            "displayname": "Kritischen Bereich bestimmen",
+            "beschreibung": "Kritischen Bereich und Annahmebereich für einen einseitigen Hypothesentest bestimmen"
+          },
+          {
+            "displayname": "Fehler 1. Art (α-Fehler)",
+            "beschreibung": "Den α-Fehler als Wahrscheinlichkeit, H₀ fälschlicherweise abzulehnen, berechnen"
+          },
+          {
+            "displayname": "Fehler 2. Art (β-Fehler)",
+            "beschreibung": "Den β-Fehler als Wahrscheinlichkeit, H₀ fälschlicherweise beizubehalten, berechnen"
+          }
+        ],
+        "stunden_pro_jahr": 25,
+        "status": "ausstehend"
+      },
+      "Abitur-Vorbereitung und Vernetzung": {
+        "unterthemen": [
+          {
+            "displayname": "Analysis und Stochastik verknüpfen",
+            "beschreibung": "Dichtefunktionen aus der Stochastik mit der Integralrechnung verknüpfen"
+          },
+          {
+            "displayname": "Geometrie und Analysis verknüpfen",
+            "beschreibung": "Schnitte von Körpern und Volumina mit geometrischen und analytischen Methoden berechnen"
+          },
+          {
+            "displayname": "Abituraufgabenformate üben",
+            "beschreibung": "Typische Abituraufgaben zum Modellieren, Argumentieren und Beurteilen üben"
+          },
+          {
+            "displayname": "Prüfungsstrategie",
+            "beschreibung": "Pflicht- und Wahlaufgaben im NRW-Zentralabitur strukturiert und zeitsparend bearbeiten"
+          }
+        ],
+        "stunden_pro_jahr": 15,
+        "status": "ausstehend"
+      }
+    }
+  }
+}
