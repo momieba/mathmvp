@@ -51,3 +51,6 @@ __pycache__
 docs/
 drafts/
 research/curriculum/exports/
+research/legacy-db/
+
+.vercel

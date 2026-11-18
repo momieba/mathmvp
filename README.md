@@ -8,7 +8,7 @@ Lern-Web-App für Mathe-Nachhilfe (Klasse 5–13): Schüler üben interaktiv, Au
 
 ```bash
 npm install
-cp .env.example .env.local   # Supabase URL + anon key eintragen
+cp .env.example .env.local   # Supabase URL + publishable key eintragen
 npm run dev                  # http://localhost:5173
 ```
 
@@ -36,4 +36,4 @@ Auth: Google OAuth + E-Mail-OTP (6-stelliger Code). Details zur Einrichtung sieh
 
 ## Deployment
 
-Vercel (`vercel.json` enthält den SPA-Rewrite). Env-Variablen `VITE_SUPABASE_URL` und `VITE_SUPABASE_ANON_KEY` im Vercel-Projekt setzen.
+Vercel (`vercel.json` enthält den SPA-Rewrite). Env-Variablen `VITE_SUPABASE_URL` und `VITE_SUPABASE_PUBLISHABLE_KEY` im Vercel-Projekt setzen.

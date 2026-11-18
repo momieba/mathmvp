@@ -49,7 +49,7 @@ Admin-Ansicht         → review → published → archived (noch nicht gebaut)
 
 ## Regeln
 
-- Nur der **anon-Key** gehört in `VITE_*`-Variablen; `service_role`-Key nie ins Frontend oder in Commits (nur lokal für Import-Scripts).
+- Nur der **Publishable Key** (`sb_publishable_…`) gehört in `VITE_*`-Variablen; Secret-/`service_role`-Key nie ins Frontend oder in Commits (nur lokal für Import-Scripts).
 - Nutzer sind überwiegend minderjährig: Datensparsamkeit, keine Tracking-Tools ohne Rückfrage; Nutzerdaten-Tabellen mit `on delete cascade` auf `auth.users` (DSGVO-Löschung).
 - UI-Texte Deutsch, Du-Form, echte Umlaute. Code und Bezeichner Englisch.
 - Mathe immer über die `Formula`-Komponente (`src/components/math/Formula.tsx`) rendern, nicht `katex` direkt.
