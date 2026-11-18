@@ -59,8 +59,7 @@ Admin-Ansicht         → review → published → archived (noch nicht gebaut)
 - TypeScript 7: `baseUrl` existiert nicht mehr – Pfad-Alias `@/*` nur über `paths`.
 - Kein Docker → kein lokales Supabase; `db:push` geht gegen das Cloud-Dev-Projekt.
 - `src/types/database.ts` ist generiert (`npm run db:types`), aktuell ein Platzhalter bis zum Supabase-Link.
-- Supabase-Standard-SMTP ist stark limitiert → für Produktion eigenes SMTP (z.B. Resend) für OTP-Mails eintragen.
-- Supabase Auth → URL Configuration: Vercel-Domain und `http://localhost:5173` als Redirect-URLs freigeben, sonst schlägt Google-Login fehl.
-- E-Mail-Template „Magic Link“ in Supabase muss `{{ .Token }}` enthalten, sonst kommt kein Code an.
+- Auth-Einstellungen (Site-URL, Redirects, OTP) liegen in `supabase/config.toml` → `npx supabase config push`. Vorher Diff lesen: Werte, die lokal nur Defaults sind, überschreiben sonst Remote-Einstellungen.
+- Free-Tier mit Standard-SMTP: nur ~2 Mails/h und **keine eigenen Mail-Templates** → Standard-Mail enthält nur den Link, keinen 6-stelligen Code. Code-Login erst mit eigenem SMTP (z.B. Resend) + Template `supabase/templates/magic_link.html` (in `config.toml` auskommentiert).
 - `npm audit` meldet `picomatch` in vite/vitest (nur Dev-Toolchain); kein `audit fix --force`.
 - Video-Skills: Pfade relativ zu `video/`; Umlaute in Dateinamen vermeiden (`safe_thema`).
