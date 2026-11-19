@@ -1,47 +1,101 @@
-import { Eraser, Pencil, Trash2, Undo2 } from 'lucide-react'
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import { ChevronsDown, Eraser, Pencil, Redo2, Trash2, Undo2 } from 'lucide-react'
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useId,
+  useImperativeHandle,
+  useReducer,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from 'react'
+import { KARO_SIZE } from '@/components/paper/GridPaper'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-
-type Point = { x: number; y: number; pressure: number }
-type Stroke = { points: Point[]; erase: boolean }
+import {
+  canRedo,
+  canUndo,
+  emptyHistory,
+  ERASER_WIDTH,
+  hasInk,
+  historyReducer,
+  PEN_WIDTH,
+  planExport,
+  type Point,
+  type Stroke,
+} from './drawingHistory'
 
 export type HandwritingCanvasHandle = {
-  /** PNG data URL (white background, max 1600 px wide) or null if nothing was drawn. */
+  /** PNG data URL (white background, cropped to the written area, max 1600 px) or null if empty. */
   toImage: () => string | null
   isEmpty: () => boolean
 }
 
-const PEN_WIDTH = 2.6
-const ERASER_WIDTH = 22
-const EXPORT_MAX_WIDTH = 1600
+type Props = {
+  /** Locked (e.g. while grading): no input, toolbar disabled, drawing stays visible. */
+  disabled?: boolean
+  /** Result shown: no toolbar, nothing can be changed. */
+  readOnly?: boolean
+  /** Called after every change of the sheet (stroke, undo, redo, clear) and once on mount. */
+  onChange?: (hasInk: boolean) => void
+}
+
+const DEFAULT_ROWS = 18 // Karo rows of the sheet (18 × 20 px = 360 px)
+const MORE_ROWS = 8
+const MAX_ROWS = 60
+const INK_FALLBACK = '#1e3fbf' // Königsblau, light theme token
+const INK_EXPORT = '#1e3fbf' // always dark ink on white for the model, also in dark mode
 
 /**
- * Drawing surface for handwritten solutions (stylus, finger, mouse).
- * Palm rejection: once a pen is detected, touch input is ignored.
+ * Drawing surface for handwritten solutions (stylus, finger, mouse) on squared paper.
+ * Pointer Events with `touch-action: none` (no scrolling while writing). Palm rejection: once a pen
+ * has been seen, touch input is ignored. Undo/redo/clear via toolbar and Ctrl+Z / Ctrl+Y.
  */
-export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, { disabled?: boolean }>(
-  function HandwritingCanvas({ disabled = false }, ref) {
+export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
+  function HandwritingCanvas({ disabled = false, readOnly = false, onChange }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
-    const strokes = useRef<Stroke[]>([])
+    const hintId = useId()
+    const [history, dispatch] = useReducer(historyReducer, emptyHistory)
+    const strokes = history.present
     const current = useRef<Stroke | null>(null)
     const penSeen = useRef(false)
     const [tool, setTool] = useState<'pen' | 'eraser'>('pen')
-    const [count, setCount] = useState(0) // re-render toolbar state (undo/clear enabled)
+    const [rows, setRows] = useState(DEFAULT_ROWS)
+    const [announcement, setAnnouncement] = useState('')
+    const locked = disabled || readOnly
+
+    const strokesRef = useRef(strokes)
+    useEffect(() => {
+      strokesRef.current = strokes
+    }, [strokes])
+    const onChangeRef = useRef(onChange)
+    useEffect(() => {
+      onChangeRef.current = onChange
+    }, [onChange])
+    useEffect(() => {
+      onChangeRef.current?.(hasInk(strokes))
+    }, [strokes])
 
     const redraw = useCallback(() => {
       const canvas = canvasRef.current
-      if (!canvas) return
-      const ctx = canvas.getContext('2d')!
+      const ctx = canvas?.getContext('2d')
+      if (!canvas || !ctx) return
       const dpr = window.devicePixelRatio || 1
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, canvas.width, canvas.height)
-      for (const s of [...strokes.current, ...(current.current ? [current.current] : [])]) {
-        drawStroke(ctx, s)
+      const color = screenInk(canvas)
+      for (const s of [...strokesRef.current, ...(current.current ? [current.current] : [])]) {
+        drawStroke(ctx, s, { ink: color })
       }
     }, [])
 
-    // Keep the backing store in sync with the CSS size (sharp lines on high-DPI screens).
+    useEffect(() => redraw(), [strokes, redraw])
+
+    // Keep the backing store in sync with the CSS size (sharp lines on high-DPI screens) and
+    // repaint when the theme changes (ink colour is a theme token).
     useEffect(() => {
       const canvas = canvasRef.current
       if (!canvas) return
@@ -53,160 +107,256 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, { disabled?
         redraw()
       }
       resize()
-      const observer = new ResizeObserver(resize)
-      observer.observe(canvas)
-      return () => observer.disconnect()
+      const resizeObserver = new ResizeObserver(resize)
+      resizeObserver.observe(canvas)
+      const themeObserver = new MutationObserver(redraw)
+      themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class'],
+      })
+      return () => {
+        resizeObserver.disconnect()
+        themeObserver.disconnect()
+      }
     }, [redraw])
 
     useImperativeHandle(ref, () => ({
-      isEmpty: () => !strokes.current.some((s) => !s.erase),
+      isEmpty: () => !hasInk(strokesRef.current),
       toImage: () => {
         const canvas = canvasRef.current
-        if (!canvas || !strokes.current.some((s) => !s.erase)) return null
+        if (!canvas) return null
         const { width, height } = canvas.getBoundingClientRect()
-        const scale = Math.min(2, EXPORT_MAX_WIDTH / width)
+        const plan = planExport(strokesRef.current, { width, height })
         const out = document.createElement('canvas')
-        out.width = Math.round(width * scale)
-        out.height = Math.round(height * scale)
-        const ctx = out.getContext('2d')!
+        const ctx = plan && out.getContext('2d')
+        if (!plan || !ctx) return null
+        out.width = plan.outWidth
+        out.height = plan.outHeight
         ctx.fillStyle = '#ffffff'
         ctx.fillRect(0, 0, out.width, out.height)
-        ctx.setTransform(scale, 0, 0, scale, 0, 0)
-        for (const s of strokes.current) drawStroke(ctx, s, '#ffffff')
+        ctx.setTransform(plan.scale, 0, 0, plan.scale, -plan.x * plan.scale, -plan.y * plan.scale)
+        for (const s of strokesRef.current) {
+          drawStroke(ctx, s, { ink: INK_EXPORT, eraseColor: '#ffffff' })
+        }
         return out.toDataURL('image/png')
       },
     }))
 
-    function pointFrom(e: React.PointerEvent<HTMLCanvasElement>): Point {
-      const rect = e.currentTarget.getBoundingClientRect()
+    function pointOf(ev: PointerEvent | ReactPointerEvent, rect: DOMRect): Point {
       // Mouse/finger report 0 or 0.5 – treat as medium pressure.
-      const pressure = e.pointerType === 'pen' && e.pressure > 0 ? e.pressure : 0.5
-      return { x: e.clientX - rect.left, y: e.clientY - rect.top, pressure }
+      const pressure = ev.pointerType === 'pen' && ev.pressure > 0 ? ev.pressure : 0.5
+      return { x: ev.clientX - rect.left, y: ev.clientY - rect.top, pressure }
     }
 
-    function onPointerDown(e: React.PointerEvent<HTMLCanvasElement>) {
-      if (disabled) return
+    function onPointerDown(e: ReactPointerEvent<HTMLCanvasElement>) {
+      if (locked || !e.isPrimary) return
+      if (e.pointerType === 'mouse' && e.button !== 0) return
       if (e.pointerType === 'pen') penSeen.current = true
       if (e.pointerType === 'touch' && penSeen.current) return // palm rejection
+      e.preventDefault()
       e.currentTarget.setPointerCapture(e.pointerId)
-      current.current = { points: [pointFrom(e)], erase: tool === 'eraser' }
-      redraw()
-    }
-
-    function onPointerMove(e: React.PointerEvent<HTMLCanvasElement>) {
-      if (!current.current) return
-      // Use coalesced events for smooth lines with fast pens.
-      const events = e.nativeEvent.getCoalescedEvents?.() ?? [e.nativeEvent]
-      const rect = e.currentTarget.getBoundingClientRect()
-      for (const ev of events) {
-        current.current.points.push({
-          x: ev.clientX - rect.left,
-          y: ev.clientY - rect.top,
-          pressure: ev.pointerType === 'pen' && ev.pressure > 0 ? ev.pressure : 0.5,
-        })
+      current.current = {
+        points: [pointOf(e, e.currentTarget.getBoundingClientRect())],
+        erase: tool === 'eraser',
       }
       redraw()
     }
 
+    function onPointerMove(e: ReactPointerEvent<HTMLCanvasElement>) {
+      const stroke = current.current
+      if (!stroke) return
+      // Coalesced events give smooth lines with fast pens.
+      const events = e.nativeEvent.getCoalescedEvents?.() ?? []
+      const rect = e.currentTarget.getBoundingClientRect()
+      const canvas = canvasRef.current
+      const ctx = canvas?.getContext('2d')
+      for (const ev of events.length > 0 ? events : [e.nativeEvent]) {
+        const before = stroke.points.length
+        stroke.points.push(pointOf(ev, rect))
+        // Draw only the new segment while writing; the full repaint happens on pointer up.
+        if (canvas && ctx && before > 0) {
+          const dpr = window.devicePixelRatio || 1
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+          drawStroke(ctx, stroke, { ink: screenInk(canvas), from: before })
+        }
+      }
+    }
+
     function onPointerUp() {
-      if (!current.current) return
-      strokes.current.push(current.current)
+      const stroke = current.current
+      if (!stroke) return
       current.current = null
-      setCount(strokes.current.length)
-      redraw()
+      dispatch({ type: 'add', stroke })
+      setAnnouncement('')
     }
 
-    function undo() {
-      strokes.current.pop()
-      setCount(strokes.current.length)
-      redraw()
+    function act(type: 'undo' | 'redo' | 'clear') {
+      if (locked) return
+      if (type === 'undo' && !canUndo(history)) return
+      if (type === 'redo' && !canRedo(history)) return
+      dispatch({ type })
+      setAnnouncement(
+        type === 'undo'
+          ? 'Rückgängig gemacht.'
+          : type === 'redo'
+            ? 'Wiederhergestellt.'
+            : 'Blatt geleert. Mit Rückgängig holst du es zurück.',
+      )
     }
 
-    function clear() {
-      strokes.current = []
-      setCount(0)
-      redraw()
+    function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return
+      const key = e.key.toLowerCase()
+      if (key === 'z') {
+        e.preventDefault()
+        act(e.shiftKey ? 'redo' : 'undo')
+      } else if (key === 'y') {
+        e.preventDefault()
+        act('redo')
+      }
     }
 
     return (
-      <div className="flex flex-col gap-2">
-        <div
-          className="flex flex-wrap items-center gap-1"
-          role="toolbar"
-          aria-label="Zeichenwerkzeuge"
-        >
-          <Button
-            type="button"
-            size="sm"
-            variant={tool === 'pen' ? 'default' : 'outline'}
-            aria-pressed={tool === 'pen'}
-            onClick={() => setTool('pen')}
-          >
-            <Pencil className="size-4" /> Stift
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={tool === 'eraser' ? 'default' : 'outline'}
-            aria-pressed={tool === 'eraser'}
-            onClick={() => setTool('eraser')}
-          >
-            <Eraser className="size-4" /> Radierer
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            disabled={count === 0 || disabled}
-            onClick={undo}
-          >
-            <Undo2 className="size-4" /> Rückgängig
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            disabled={count === 0 || disabled}
-            onClick={clear}
-          >
-            <Trash2 className="size-4" /> Alles löschen
-          </Button>
-        </div>
+      <div role="group" aria-label="Schreibbereich" className="flex flex-col" onKeyDown={onKeyDown}>
+        <p id={hintId} className="sr-only">
+          Schreib deinen Rechenweg mit Stift, Finger oder Maus auf das Karopapier. Rückgängig mit
+          Strg+Z, Wiederholen mit Strg+Y. Zum Schreiben brauchst du einen Zeiger oder Touchscreen.
+        </p>
         <canvas
           ref={canvasRef}
-          aria-label="Schreibfläche für deinen Lösungsweg"
+          tabIndex={locked ? -1 : 0}
+          role="img"
+          aria-label={readOnly ? 'Deine abgegebene Lösung' : 'Schreibfläche für deinen Lösungsweg'}
+          aria-describedby={locked ? undefined : hintId}
           className={cn(
-            'h-80 w-full touch-none rounded-lg border bg-white sm:h-96',
-            tool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair',
+            'grid-paper block w-full touch-none select-none',
+            !locked && (tool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair'),
             disabled && 'opacity-60',
           )}
           style={{
-            backgroundImage: 'linear-gradient(to bottom, transparent 31px, rgb(0 0 0 / 0.06) 32px)',
-            backgroundSize: '100% 32px',
+            height: rows * KARO_SIZE,
+            WebkitTouchCallout: 'none',
+            WebkitUserSelect: 'none',
           }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
+          onContextMenu={(e) => e.preventDefault()}
         />
+        <p role="status" className="sr-only">
+          {announcement}
+        </p>
+
+        {!readOnly && (
+          <>
+            {/* On phones the toolbar sits at the bottom edge, within thumb reach. */}
+            <div
+              role="toolbar"
+              aria-label="Zeichenwerkzeuge"
+              className="bg-background flex flex-wrap items-center gap-1 border-t-2 p-2 max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-30 max-md:flex-nowrap max-md:justify-between max-md:px-3 max-md:pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+            >
+              <ToolButton
+                label="Stift"
+                icon={<Pencil className="size-4" />}
+                pressed={tool === 'pen'}
+                onClick={() => setTool('pen')}
+                disabled={disabled}
+              />
+              <ToolButton
+                label="Radierer"
+                icon={<Eraser className="size-4" />}
+                pressed={tool === 'eraser'}
+                onClick={() => setTool('eraser')}
+                disabled={disabled}
+              />
+              <ToolButton
+                label="Rückgängig"
+                icon={<Undo2 className="size-4" />}
+                onClick={() => act('undo')}
+                disabled={disabled || !canUndo(history)}
+              />
+              <ToolButton
+                label="Wiederholen"
+                icon={<Redo2 className="size-4" />}
+                onClick={() => act('redo')}
+                disabled={disabled || !canRedo(history)}
+              />
+              <ToolButton
+                label="Leeren"
+                icon={<Trash2 className="size-4" />}
+                onClick={() => act('clear')}
+                disabled={disabled || strokes.length === 0}
+              />
+              <ToolButton
+                label="Mehr Platz"
+                icon={<ChevronsDown className="size-4" />}
+                onClick={() => setRows((r) => Math.min(MAX_ROWS, r + MORE_ROWS))}
+                disabled={disabled || rows >= MAX_ROWS}
+                className="md:ml-auto"
+              />
+            </div>
+          </>
+        )}
       </div>
     )
   },
 )
 
-function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke, eraseColor?: string) {
+function ToolButton({
+  label,
+  icon,
+  pressed,
+  onClick,
+  disabled,
+  className,
+}: {
+  label: string
+  icon: ReactNode
+  pressed?: boolean
+  onClick: () => void
+  disabled?: boolean
+  className?: string
+}) {
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant={pressed ? 'default' : 'ghost'}
+      aria-pressed={pressed}
+      disabled={disabled}
+      onClick={onClick}
+      className={className}
+    >
+      {icon}
+      <span className="max-md:sr-only">{label}</span>
+    </Button>
+  )
+}
+
+function screenInk(canvas: HTMLCanvasElement) {
+  return getComputedStyle(canvas).getPropertyValue('--koenigsblau').trim() || INK_FALLBACK
+}
+
+/** Draws a stroke (or only its segments from index `from`). `eraseColor`: paint instead of cutting a hole. */
+function drawStroke(
+  ctx: CanvasRenderingContext2D,
+  stroke: Stroke,
+  opts: { ink: string; eraseColor?: string; from?: number },
+) {
   const pts = stroke.points
   if (pts.length === 0) return
+  const from = opts.from ?? 1
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
   if (stroke.erase) {
-    // On screen: punch a hole; on export: paint background colour.
-    ctx.globalCompositeOperation = eraseColor ? 'source-over' : 'destination-out'
-    ctx.strokeStyle = eraseColor ?? '#000'
+    // On screen: punch a hole; on export: paint the background colour.
+    ctx.globalCompositeOperation = opts.eraseColor ? 'source-over' : 'destination-out'
+    ctx.strokeStyle = opts.eraseColor ?? '#000'
     ctx.lineWidth = ERASER_WIDTH
   } else {
     ctx.globalCompositeOperation = 'source-over'
-    ctx.strokeStyle = '#111827'
+    ctx.strokeStyle = opts.ink
   }
   if (pts.length === 1) {
     const p = pts[0]!
@@ -221,16 +371,14 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke, eraseColor?: 
     ctx.fillStyle = ctx.strokeStyle
     ctx.fill()
   }
-  for (let i = 1; i < pts.length; i++) {
+  for (let i = Math.max(1, from); i < pts.length; i++) {
     const a = pts[i - 1]!
     const b = pts[i]!
     if (!stroke.erase) ctx.lineWidth = PEN_WIDTH * (0.6 + (a.pressure + b.pressure) / 2)
     ctx.beginPath()
     ctx.moveTo(a.x, a.y)
     // Midpoint smoothing for less jagged lines.
-    const mx = (a.x + b.x) / 2
-    const my = (a.y + b.y) / 2
-    ctx.quadraticCurveTo(a.x, a.y, mx, my)
+    ctx.quadraticCurveTo(a.x, a.y, (a.x + b.x) / 2, (a.y + b.y) / 2)
     ctx.lineTo(b.x, b.y)
     ctx.stroke()
   }
