@@ -2,13 +2,21 @@
 @import 'katex/dist/katex.min.css';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
-@import '@fontsource-variable/geist';
+@import '@fontsource-variable/atkinson-hyperlegible-next';
+@import '@fontsource-variable/recursive/casl.css';
 
-@custom-variant dark (&:is(.dark *));
+/* Design: docs/design/design-plan.md – "Karopapier mit Korrekturrand".
+   Hell = Papier, dunkel = Tafel (Klasse .dark auf <html>, gesetzt per Inline-Script in index.html). */
+
+@custom-variant dark (&:is(.dark, .dark *));
 
 @theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: 'Geist Variable', sans-serif;
+  /* Fließtext/UI: Atkinson Hyperlegible Next (1/l/I und 0/O eindeutig). Überschriften und Randnotizen:
+     Recursive mit CASL 1 ("Casual"), siehe Basisregeln unten. */
+  --font-sans: 'Atkinson Hyperlegible Next Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-heading:
+    'Recursive Variable', 'Atkinson Hyperlegible Next Variable', ui-sans-serif, system-ui,
+    sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -40,6 +48,14 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+  --color-karo: var(--karo);
+  --color-marker: var(--marker);
+  --color-marker-foreground: var(--marker-foreground);
+  --color-correct: var(--correct);
+  --color-wrong: var(--wrong);
+  --color-unclear: var(--unclear);
+  --color-unreadable: var(--unreadable);
+  /* Radien nach Hierarchie: Bedienelemente 10 px (rounded-lg), Papierflächen 3 px, Marken rund. */
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -47,88 +63,246 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
-  --color-highlight: var(--highlight);
+  --radius-paper: 3px;
+  --shadow-sheet: var(--sheet-shadow);
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.48 0.19 264);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.48 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.62 0.15 264);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  color-scheme: light;
+
+  /* Papier-Palette (Kontraste: siehe Abschnitt "Kontraste" im Design-Plan) */
+  --paper: #fafbfd;
+  --karo: #d6dee9;
+  --graphit: #262a31;
+  --koenigsblau: #1e3fbf;
+  --marker: #ffe45c;
+  --marker-foreground: #262a31;
+  --correct: #1b7a3a;
+  --wrong: #c2132d;
+  --unclear: #9a5b00;
+  --unreadable: #5f6672;
+
+  --background: var(--paper);
+  --foreground: var(--graphit);
+  --card: var(--paper);
+  --card-foreground: var(--graphit);
+  --popover: var(--paper);
+  --popover-foreground: var(--graphit);
+  --primary: var(--koenigsblau);
+  --primary-foreground: #ffffff;
+  --secondary: #eef2f8;
+  --secondary-foreground: var(--graphit);
+  --muted: #eef2f8;
+  --muted-foreground: #4b5361;
+  --accent: #eef2f8;
+  --accent-foreground: var(--graphit);
+  --destructive: var(--wrong);
+  --border: var(--karo);
+  /* Eingabefelder brauchen 3:1 gegen das Papier (WCAG 1.4.11) – stärker als die Karolinie. */
+  --input: #8590a3;
+  --ring: var(--koenigsblau);
+  --chart-1: #d6dee9;
+  --chart-2: #8590a3;
+  --chart-3: #4b5361;
+  --chart-4: #262a31;
+  --chart-5: #1e3fbf;
   --radius: 0.625rem;
-  --highlight: oklch(0.93 0.11 95);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: var(--paper);
+  --sidebar-foreground: var(--graphit);
+  --sidebar-primary: var(--koenigsblau);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eef2f8;
+  --sidebar-accent-foreground: var(--graphit);
+  --sidebar-border: var(--karo);
+  --sidebar-ring: var(--koenigsblau);
+
+  /* Karopapier: Kästchengröße in px. Die Zeichenfläche (Etappe 6) nutzt dieselbe Konstante. */
+  --karo-size: 20px;
+  --sheet-shadow: 0 1px 2px rgb(38 42 49 / 0.08), 0 8px 20px -8px rgb(38 42 49 / 0.2);
 }
 
 .dark {
-  --highlight: oklch(0.45 0.1 95);
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.78 0.12 264);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  color-scheme: dark;
+
+  /* Tafel: Schiefergrün statt Schwarz, Kreidetöne */
+  --paper: #1e2b28;
+  --karo: #33443f;
+  --graphit: #e6ece8;
+  --koenigsblau: #9db1ff;
+  --marker: #e8cf4a;
+  --marker-foreground: #1e2b28;
+  --correct: #7fd69a;
+  --wrong: #ff8a93;
+  --unclear: #f2b65c;
+  --unreadable: #a9b3ae;
+
+  --primary-foreground: #1e2b28;
+  --secondary: #2a3a36;
+  --muted: #2a3a36;
+  --muted-foreground: #b1bdb7;
+  --accent: #2a3a36;
+  --input: #6f837c;
+  --chart-1: #33443f;
+  --chart-2: #6f837c;
+  --chart-3: #b1bdb7;
+  --chart-4: #e6ece8;
+  --chart-5: #9db1ff;
+  --sidebar-primary-foreground: #1e2b28;
+  --sidebar-accent: #2a3a36;
+  --sheet-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 20px -8px rgb(0 0 0 / 0.5);
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+    font-size: 1rem;
+    line-height: 1.4;
+    font-variant-numeric: lining-nums;
+    -webkit-font-smoothing: antialiased;
   }
   html {
     @apply font-sans;
+  }
+  /* Überschriften: Recursive "Casual" (CASL 1) – handschriftlicher Charakter, aber Druckschrift. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-heading);
+    font-variation-settings: 'CASL' 1;
+    font-weight: 700;
+    text-wrap: balance;
+  }
+  summary {
+    cursor: pointer;
+  }
+}
+
+/* Schriftrollen (Design-Plan Abschnitt 4). Größen in rem, Zeilenhöhe nach Rolle. */
+@utility text-fine {
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+@utility text-ui {
+  font-size: 1rem;
+  line-height: 1.4;
+}
+@utility text-prose {
+  font-size: 1.125rem;
+  line-height: 1.55;
+}
+@utility text-h3 {
+  font-size: 1.3125rem;
+  line-height: 1.25;
+}
+@utility text-h2 {
+  font-size: 1.3125rem;
+  line-height: 1.25;
+  @media (min-width: 40rem) {
+    font-size: 1.5rem;
+  }
+}
+@utility text-title {
+  font-size: 1.75rem;
+  line-height: 1.15;
+  @media (min-width: 40rem) {
+    font-size: 2.25rem;
+  }
+}
+@utility text-display {
+  font-size: 2.5rem;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  @media (min-width: 40rem) {
+    font-size: 3.25rem;
+  }
+  @media (min-width: 64rem) {
+    font-size: 3.75rem;
+  }
+}
+/* Casual-Schrift für Randnotizen und kurze Handschrift-Akzente. */
+@utility casual {
+  font-family: var(--font-heading);
+  font-variation-settings: 'CASL' 1;
+  font-weight: 600;
+}
+@utility measure {
+  max-width: 68ch;
+}
+
+/* Karopapier: nur auf der Arbeitsfläche (GridPaper), nie als Seiten-Tapete. */
+@utility grid-paper {
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--karo) 1px, transparent 1px),
+    linear-gradient(90deg, var(--karo) 1px, transparent 1px);
+  background-size: var(--karo-size) var(--karo-size);
+  background-position: -1px -1px;
+}
+
+/* Korrektur im Rand: Haken/Kreuz werden nacheinander gezeichnet (Index über --i). */
+@keyframes margin-note-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes mark-draw {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@utility margin-animate {
+  animation: margin-note-in 0.3s ease-out both;
+  animation-delay: calc(var(--i, 0) * 350ms);
+  & svg * {
+    stroke-dasharray: 100;
+    animation: mark-draw 0.45s ease-out both;
+    animation-delay: calc(var(--i, 0) * 350ms + 120ms);
+  }
+}
+
+/* Bedienelemente: Touch-Ziel mindestens 44 px, UI-Schrift 16 px, ein einheitlicher Fokus-Ring.
+   Bewusst ohne @layer, damit die Regeln die Größen der (per CLI erzeugten) shadcn-Komponenten
+   überstimmen, ohne diese Dateien anzufassen. */
+[data-slot='button'],
+[data-slot='input'] {
+  min-height: 2.75rem;
+  font-size: 1rem;
+}
+[data-slot='button'] {
+  min-width: 2.75rem;
+}
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+[data-slot]:focus-visible {
+  box-shadow: none;
+}
+select:focus-visible,
+[data-slot='input']:focus-visible {
+  outline-offset: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }

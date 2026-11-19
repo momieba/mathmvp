@@ -1,14 +1,7 @@
 import { cn } from '@/lib/utils'
-import { masteryLabels, masteryLevel, type MasteryLevel } from './score'
+import { masteryLabels, masteryLevel } from './score'
 
-const levelColor: Record<MasteryLevel, string> = {
-  neu: 'bg-muted-foreground/30',
-  anfang: 'bg-amber-500',
-  ueben: 'bg-sky-500',
-  sicher: 'bg-primary',
-  gemeistert: 'bg-emerald-600',
-}
-
+/** Progress as number plus a slim bar; the level is always written out (never color only). */
 export function ScoreBar({
   score,
   attemptCount,
@@ -28,17 +21,19 @@ export function ScoreBar({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={score}
-        aria-label={`Fortschritt: ${score} von 100 Punkten`}
-        className="bg-secondary h-2 flex-1 overflow-hidden rounded-full"
+        aria-valuetext={`${score} von 100 Punkten, ${masteryLabels[level].toLowerCase()}`}
+        aria-label="Fortschritt"
+        className="bg-karo h-2 min-w-12 flex-1 overflow-hidden rounded-[2px]"
       >
         <div
-          className={cn('h-full rounded-full transition-all', levelColor[level])}
+          className="bg-primary h-full rounded-[2px] transition-[width]"
           style={{ width: `${score}%` }}
         />
       </div>
       {showLabel && (
-        <span className="text-muted-foreground w-28 shrink-0 text-right text-xs tabular-nums">
-          {masteryLabels[level]} · {score}
+        <span className="text-fine flex shrink-0 items-baseline gap-2 whitespace-nowrap tabular-nums">
+          {level !== 'neu' && <strong className="font-semibold">{score} Punkte</strong>}
+          <span className="text-muted-foreground">{masteryLabels[level]}</span>
         </span>
       )}
     </div>

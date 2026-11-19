@@ -93,6 +93,11 @@ export function DatenschutzPage() {
           Abs. 2 Nr. 2 TDDDG) und wird beim Abmelden gelöscht. Wir setzen keine Cookies oder
           ähnlichen Technologien für Werbung, Analyse oder Tracking ein.
         </p>
+        <p>
+          Wenn du in der App zwischen heller und dunkler Darstellung wechselst, merkt sich dein
+          Browser diese Auswahl ebenfalls im lokalen Speicher (Schlüssel „theme“). Der Wert enthält
+          keine Personendaten und wird nicht an uns übertragen.
+        </p>
       </Section>
 
       <Section title="7. Kinder und Jugendliche">

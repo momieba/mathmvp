@@ -4,7 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="theme-color" content="#3b4fd8" />
+    <meta name="theme-color" content="#fafbfd" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1e2b28" media="(prefers-color-scheme: dark)" />
+    <!-- Theme (Papier/Tafel) vor dem ersten Paint setzen; Speicherzugriff darf fehlschlagen. -->
+    <script>
+      ;(function () {
+        var t = null
+        try {
+          t = localStorage.getItem('theme')
+        } catch (e) {}
+        var dark = false
+        try {
+          dark =
+            t === 'dark' ||
+            (t !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        } catch (e) {}
+        if (dark) document.documentElement.classList.add('dark')
+      })()
+    </script>
 
     <title>Mathe-Training – Mathe üben passend zu deinem Lehrplan (Klasse 5–13)</title>
     <meta

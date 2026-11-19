@@ -1,7 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot, hydrateRoot } from 'react-dom/client'
 import { App } from '@/app/App'
+import { initTheme } from '@/lib/theme'
 import './index.css'
+
+initTheme()
 
 const container = document.getElementById('root')!
 const app = (
