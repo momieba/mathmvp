@@ -127,6 +127,13 @@ describe('generateExercises – template errors', () => {
     expect(() => generateExercises(minimal, { maxAttemptsPerExercise: 20 })).toThrow(/only 2\/3/)
   })
 
+  it('stores numeric answers without float noise', () => {
+    const noisy = structuredClone(minimal)
+    noisy.levels[0]!.count = 1
+    noisy.levels[0]!.answer.value = '0.1 + 0.2'
+    expect(generateExercises(noisy)[0]).toMatchObject({ answer: { value: 0.3 } })
+  })
+
   it('aborts on a failing self-check (template bug)', () => {
     expect(() => generateExercises({ ...minimal, checks: ['x > 5'] })).toThrow(
       /template check failed/,

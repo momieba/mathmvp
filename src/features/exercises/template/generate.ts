@@ -193,7 +193,12 @@ function buildAnswer(
     if (typeof value !== 'number' || typeof tolerance !== 'number') {
       throw new Error(`level "${level.id}": numeric answer/tolerance must evaluate to numbers`)
     }
-    return { type: 'numeric' as const, answer: { value, tolerance, unit: answer.unit } }
+    // Strip float noise (208.07999999999998 → 208.08) before storing the reference answer.
+    const clean = (n: number) => Math.round(n * 1e9) / 1e9
+    return {
+      type: 'numeric' as const,
+      answer: { value: clean(value), tolerance: clean(tolerance), unit: answer.unit },
+    }
   }
   const correct = render(answer.correct)
   const distractors = answer.distractors.map(render)
