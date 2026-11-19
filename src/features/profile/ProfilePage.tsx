@@ -66,11 +66,13 @@ function ProfileForm({ profile }: { profile: Profile }) {
     )
   }
 
-  const header = isOnboarding ? (
-    <PublicHeader />
-  ) : (
-    <AppHeader back={{ to: '/app', label: 'Zurück zur App' }} width="reading" />
-  )
+  // No way back to /app while onboarding or consent is pending (RequireProfile would bounce to /profil).
+  const header =
+    isOnboarding || needsProfileSetup(profile) ? (
+      <PublicHeader />
+    ) : (
+      <AppHeader back={{ to: '/app', label: 'Zurück zur App' }} width="reading" />
+    )
 
   return (
     <PageShell header={header} width="narrow">
@@ -188,7 +190,7 @@ function ProfileForm({ profile }: { profile: Profile }) {
 
         {update.error && (
           <p role="alert" className="text-destructive">
-            Speichern hat nicht geklappt: {update.error.message}. Versuch es noch einmal.
+            Speichern hat nicht geklappt: {update.error.message} Versuch es noch einmal.
           </p>
         )}
 

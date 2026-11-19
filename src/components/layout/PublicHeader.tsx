@@ -23,7 +23,11 @@ export function PublicHeader({
       >
         <Logo />
         <div className="flex items-center gap-1 sm:gap-2">
-          {children}
+          {children && (
+            <nav aria-label="Hauptnavigation" className="flex items-center gap-1 sm:gap-2">
+              {children}
+            </nav>
+          )}
           <ThemeToggle />
         </div>
       </div>

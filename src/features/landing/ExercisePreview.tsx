@@ -31,11 +31,16 @@ export function ExercisePreview({ className }: { className?: string }) {
             <Row
               key={step.tex}
               mark={
-                <div className="margin-animate" style={{ '--i': i } as CSSProperties}>
+                <div
+                  aria-hidden="true"
+                  className="margin-animate"
+                  style={{ '--i': i } as CSSProperties}
+                >
                   <StatusMark status="correct" compact />
                 </div>
               }
             >
+              <span className="sr-only">Schritt {i + 1}: </span>
               <Formula tex={step.tex} />
             </Row>
           ))}

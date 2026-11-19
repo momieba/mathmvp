@@ -12,12 +12,10 @@ import { ThemeToggle } from './ThemeToggle'
  */
 export function AppHeader({
   back,
-  title,
   actions,
   width = 'default',
 }: {
   back?: { to: string; label: string }
-  title?: string
   actions?: ReactNode
   width?: 'reading' | 'default'
 }) {
@@ -41,11 +39,6 @@ export function AppHeader({
           <Logo />
         )}
         <div className="flex shrink-0 items-center gap-1">
-          {title && (
-            <span className="text-muted-foreground text-fine hidden truncate sm:inline">
-              {title}
-            </span>
-          )}
           {actions}
           <ThemeToggle />
         </div>

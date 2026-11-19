@@ -59,13 +59,10 @@ export function PracticePage() {
     setRound((r) => r + 1)
   }
 
-  const topic = subtopic.data?.topics
   return (
     <PageShell
       width="reading"
-      header={
-        <AppHeader width="reading" back={{ to: '/app', label: topic?.title ?? 'Meine Themen' }} />
-      }
+      header={<AppHeader width="reading" back={{ to: '/app', label: 'Meine Themen' }} />}
     >
       {subtopic.isPending ? (
         <p role="status" className="text-muted-foreground">
@@ -229,7 +226,7 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
 
       {submit.error && (
         <p role="alert" className="text-destructive">
-          Das hat nicht geklappt: {submit.error.message}. Versuch es noch einmal.
+          Das hat nicht geklappt: {submit.error.message} Versuch es noch einmal.
         </p>
       )}
 
