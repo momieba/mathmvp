@@ -20,7 +20,7 @@ import {
 } from '../_shared/grading.ts'
 import { ProviderError, gradeWithModel } from '../_shared/provider.ts'
 
-const DEFAULT_MODEL = 'gemini-3.8-flash'
+const DEFAULT_MODEL = 'gemini-3.1-flash-lite'
 const MAX_IMAGE_BASE64 = 2_000_000 // base64 length limit
 const MINUTE = 60_000
 const DAY = 24 * 60 * MINUTE
