@@ -233,7 +233,9 @@ export function useGradeHandwriting() {
       if (error) {
         // Edge Function errors carry a JSON body with a user-facing message.
         const ctx = (error as { context?: Response }).context
-        const message = ctx ? ((await ctx.json().catch(() => null)) as { error?: string } | null)?.error : null
+        const message = ctx
+          ? ((await ctx.json().catch(() => null)) as { error?: string } | null)?.error
+          : null
         throw new Error(message ?? error.message)
       }
       return data!

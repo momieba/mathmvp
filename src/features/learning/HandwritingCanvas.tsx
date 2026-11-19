@@ -130,7 +130,11 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, { disabled?
 
     return (
       <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-1" role="toolbar" aria-label="Zeichenwerkzeuge">
+        <div
+          className="flex flex-wrap items-center gap-1"
+          role="toolbar"
+          aria-label="Zeichenwerkzeuge"
+        >
           <Button
             type="button"
             size="sm"
@@ -149,10 +153,22 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, { disabled?
           >
             <Eraser className="size-4" /> Radierer
           </Button>
-          <Button type="button" size="sm" variant="ghost" disabled={count === 0 || disabled} onClick={undo}>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            disabled={count === 0 || disabled}
+            onClick={undo}
+          >
             <Undo2 className="size-4" /> Rückgängig
           </Button>
-          <Button type="button" size="sm" variant="ghost" disabled={count === 0 || disabled} onClick={clear}>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            disabled={count === 0 || disabled}
+            onClick={clear}
+          >
             <Trash2 className="size-4" /> Alles löschen
           </Button>
         </div>
@@ -165,8 +181,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, { disabled?
             disabled && 'opacity-60',
           )}
           style={{
-            backgroundImage:
-              'linear-gradient(to bottom, transparent 31px, rgb(0 0 0 / 0.06) 32px)',
+            backgroundImage: 'linear-gradient(to bottom, transparent 31px, rgb(0 0 0 / 0.06) 32px)',
             backgroundSize: '100% 32px',
           }}
           onPointerDown={onPointerDown}
@@ -196,7 +211,13 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke, eraseColor?: 
   if (pts.length === 1) {
     const p = pts[0]!
     ctx.beginPath()
-    ctx.arc(p.x, p.y, (stroke.erase ? ERASER_WIDTH : PEN_WIDTH * (0.6 + p.pressure)) / 2, 0, Math.PI * 2)
+    ctx.arc(
+      p.x,
+      p.y,
+      (stroke.erase ? ERASER_WIDTH : PEN_WIDTH * (0.6 + p.pressure)) / 2,
+      0,
+      Math.PI * 2,
+    )
     ctx.fillStyle = ctx.strokeStyle
     ctx.fill()
   }
