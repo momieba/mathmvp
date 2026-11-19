@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import type { Difficulty, ExerciseType, LearningStage } from '@/features/content/enums'
 import type { Diagram } from '@/features/exercises/schema'
 import { supabase } from '@/lib/supabase'
+import { HANDWRITING_ENABLED } from './config'
 import { computeScore } from './score'
 
 export type SubtopicSummary = {
@@ -183,7 +184,12 @@ export function usePracticeExercises(subtopicId: string | undefined) {
         .select('id, type, prompt, diagram, presentation, exercise_placements(difficulty)')
         .eq('subtopic_id', subtopicId!)
         .eq('status', 'published')
-        .in('type', ['numeric', 'multiple_choice', 'handwritten'])
+        .in(
+          'type',
+          HANDWRITING_ENABLED
+            ? ['numeric', 'multiple_choice', 'handwritten']
+            : ['numeric', 'multiple_choice'],
+        )
       if (error) throw error
       return data.map((e) => ({
         id: e.id,
@@ -215,20 +221,46 @@ export function useSubmitAnswer() {
   })
 }
 
-export type HandwritingResult = SubmitResult & {
-  readable: boolean
-  summary: string
-  errors: { step: string; explanation: string }[]
+export type StepVerdict = 'correct' | 'incorrect' | 'unclear'
+export type UnreadableReason = 'empty' | 'illegible' | 'off_topic' | 'photo_quality'
+
+export type GradedStep = {
+  studentWork: string
+  verdict: StepVerdict
+  comment: string
+  referenceStep: number | null
 }
 
-/** Sends the drawn solution to the grade-handwriting Edge Function (Gemini). */
+/** Response of the grade-handwriting Edge Function. */
+export type HandwritingResult =
+  | {
+      status: 'graded'
+      correct: boolean
+      steps: GradedStep[]
+      final: {
+        studentValue: string | null
+        verdict: 'correct' | 'incorrect' | 'missing'
+        comment: string
+      }
+      summary: string
+      answer: SubmitResult['answer']
+      solution: SubmitResult['solution']
+    }
+  | { status: 'unreadable'; reason: UnreadableReason }
+
+const GRADING_TIMEOUT_MS = 60_000
+
+/** Sends the drawn solution to the grade-handwriting Edge Function. The image is never stored. */
 export function useGradeHandwriting() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (args: { exerciseId: string; image: string }) => {
       const { data, error } = await supabase.functions.invoke<HandwritingResult>(
         'grade-handwriting',
-        { body: { exerciseId: args.exerciseId, image: args.image } },
+        {
+          body: { exerciseId: args.exerciseId, image: args.image, kind: 'drawing' },
+          timeout: GRADING_TIMEOUT_MS,
+        },
       )
       if (error) {
         // Edge Function errors carry a JSON body with a user-facing message.
@@ -236,13 +268,18 @@ export function useGradeHandwriting() {
         const message = ctx
           ? ((await ctx.json().catch(() => null)) as { error?: string } | null)?.error
           : null
-        throw new Error(message ?? error.message)
+        throw new Error(message ?? gradingFallbackMessage)
       }
       return data!
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.progress }),
+    onSuccess: (result) => {
+      if (result.status === 'graded') return qc.invalidateQueries({ queryKey: keys.progress })
+    },
   })
 }
+
+export const gradingFallbackMessage =
+  'Die Korrektur hat nicht geantwortet. Prüf deine Verbindung und gib deine Lösung noch einmal ab – deine Zeichnung bleibt erhalten.'
 
 export async function fetchHint(exerciseId: string, index: number): Promise<string | null> {
   const { data, error } = await supabase.rpc('get_hint', {

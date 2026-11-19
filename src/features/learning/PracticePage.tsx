@@ -1,5 +1,5 @@
 import { Lightbulb } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router'
 import { AppHeader } from '@/components/layout/AppHeader'
 import { PageShell } from '@/components/layout/PageShell'
@@ -13,13 +13,18 @@ import { buttonClass } from '@/lib/buttonClass'
 import { cn } from '@/lib/utils'
 import {
   fetchHint,
+  useGradeHandwriting,
   usePracticeExercises,
   useProgress,
   useSubmitAnswer,
   useSubtopic,
+  type HandwritingResult,
   type PracticeExercise,
   type SubmitResult,
+  type UnreadableReason,
 } from './api'
+import { HANDWRITING_ENABLED } from './config'
+import { HandwritingCanvas, type HandwritingCanvasHandle } from './HandwritingCanvas'
 import { ScoreBar } from './ScoreBar'
 import { selectExercise } from './selectExercise'
 
@@ -103,18 +108,35 @@ export function PracticePage() {
   )
 }
 
+type Result = Pick<SubmitResult, 'correct' | 'answer' | 'solution'>
+type Graded = Extract<HandwritingResult, { status: 'graded' }>
+
 function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext: () => void }) {
   const submit = useSubmitAnswer()
+  const grade = useGradeHandwriting()
+  const canvasRef = useRef<HandwritingCanvasHandle>(null)
+  const [hasInk, setHasInk] = useState(false)
   const [value, setValue] = useState('')
   const [selected, setSelected] = useState<number[]>([])
   const [hints, setHints] = useState<string[]>([])
   const [noMoreHints, setNoMoreHints] = useState(false)
-  const result = submit.data
+  const handwriting =
+    HANDWRITING_ENABLED && (exercise.type === 'numeric' || exercise.type === 'handwritten')
+  const graded = grade.data?.status === 'graded' ? grade.data : undefined
+  const unreadable = grade.data?.status === 'unreadable' ? grade.data : undefined
+  const result: Result | undefined = submit.data ?? graded
+  const pending = submit.isPending || grade.isPending
   const multi = exercise.presentation.multi === true
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
     if (result) return onNext()
+    if (pending) return
+    if (handwriting) {
+      const image = canvasRef.current?.toImage()
+      if (image) grade.mutate({ exerciseId: exercise.id, image })
+      return
+    }
     submit.mutate({
       exerciseId: exercise.id,
       answer: exercise.type === 'numeric' ? { value } : { selected },
@@ -127,10 +149,24 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
     else setNoMoreHints(true)
   }
 
-  const canSubmit = exercise.type === 'numeric' ? value.trim() !== '' : selected.length > 0
+  const canSubmit = handwriting
+    ? hasInk
+    : exercise.type === 'numeric'
+      ? value.trim() !== ''
+      : selected.length > 0
+  const submitLabel = result
+    ? 'Nächste Aufgabe'
+    : handwriting
+      ? grade.isPending
+        ? 'Wird korrigiert …'
+        : 'Lösung abgeben'
+      : 'Prüfen'
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-6">
+    <form
+      onSubmit={onSubmit}
+      className={cn('flex flex-col gap-6', handwriting && !result && 'max-md:pb-20')}
+    >
       {/* Aufgabe */}
       <section aria-labelledby="task-heading">
         <h2 id="task-heading" className="text-fine text-muted-foreground font-sans font-normal">
@@ -142,16 +178,38 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
         {exercise.diagram && <DiagramView diagram={exercise.diagram} />}
       </section>
 
-      {/* Antwortbereich: das Blatt mit Rand. Hier zieht in Etappe 6 die Zeichenfläche ein. */}
+      {/* Antwortbereich: das Blatt mit Rand. Rechenaufgaben löst du auf der Zeichenfläche. */}
       <GridPaper
         as="section"
         raised
         aria-label="Antwortbereich"
-        margin={<div role="status">{result && <ResultNote result={result} />}</div>}
+        margin={
+          <div role="status">
+            {grade.isPending ? (
+              <PendingNote />
+            ) : unreadable ? (
+              <UnreadableNote reason={unreadable.reason} />
+            ) : graded ? (
+              <HandwritingNotes result={graded} />
+            ) : submit.data ? (
+              <ResultNote result={submit.data} />
+            ) : null}
+          </div>
+        }
         marginClassName="max-md:has-[[role=status]:empty]:hidden"
-        contentClassName="py-4"
+        contentClassName={handwriting ? 'p-0' : 'py-4'}
       >
-        {exercise.type === 'numeric' ? (
+        {handwriting ? (
+          <HandwritingCanvas
+            ref={canvasRef}
+            disabled={grade.isPending}
+            readOnly={!!graded}
+            onChange={(ink) => {
+              setHasInk(ink)
+              if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
+            }}
+          />
+        ) : exercise.type === 'numeric' ? (
           <div className="flex items-center gap-3">
             <Input
               aria-label="Deine Antwort"
@@ -209,6 +267,20 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
         )}
       </GridPaper>
 
+      {handwriting && !result && (
+        <div className="text-fine text-muted-foreground -mt-3 space-y-1">
+          {exercise.presentation.unit && (
+            <p>
+              Schreib dein Ergebnis zum Schluss mit der Einheit {exercise.presentation.unit} auf.
+            </p>
+          )}
+          <p>
+            Eine KI korrigiert deine Lösung und kann sich irren. Das Bild wird nach der Korrektur
+            nicht gespeichert.
+          </p>
+        </div>
+      )}
+
       {/* Hinweise */}
       {hints.length > 0 && !result && (
         <ul className="space-y-2" aria-label="Hinweise">
@@ -229,23 +301,24 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
           Das hat nicht geklappt: {submit.error.message} Versuch es noch einmal.
         </p>
       )}
+      {grade.error && (
+        <p role="alert" className="text-destructive">
+          {grade.error.message}
+        </p>
+      )}
 
       {/* Musterlösung: zweites Blatt */}
       {result && <Solution result={result} />}
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button
-          type="submit"
-          className="px-6"
-          disabled={(!result && !canSubmit) || submit.isPending}
-        >
-          {result ? 'Nächste Aufgabe' : 'Prüfen'}
+        <Button type="submit" className="px-6" disabled={(!result && !canSubmit) || pending}>
+          {submitLabel}
         </Button>
         {!result && (
           <Button
             type="button"
             variant="outline"
-            disabled={noMoreHints}
+            disabled={noMoreHints || grade.isPending}
             onClick={() => void nextHint()}
           >
             {noMoreHints
@@ -265,17 +338,33 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
   )
 }
 
+/** Progress text while grading; says so when it takes longer than a few seconds. Mounted only while pending. */
+function PendingNote({ afterMs = 8000 }: { afterMs?: number }) {
+  const [slow, setSlow] = useState(false)
+  useEffect(() => {
+    const id = setTimeout(() => setSlow(true), afterMs)
+    return () => clearTimeout(id)
+  }, [afterMs])
+  return (
+    <p className="casual text-ui text-muted-foreground">
+      {slow ? 'Dauert noch einen Moment …' : 'Deine Lösung wird gelesen …'}
+    </p>
+  )
+}
+
 function formatNumber(n: number) {
   return String(n).replace('.', ',')
 }
 
-/** Correction in the margin of the answer sheet (later: one note per handwritten step). */
+function correctAnswerText(answer: SubmitResult['answer']) {
+  return answer.value !== undefined
+    ? `${formatNumber(answer.value)}${answer.unit ? ` ${answer.unit}` : ''}`
+    : answer.correct?.map((i) => answer.options?.[i]).join(', ')
+}
+
+/** Correction in the margin of the answer sheet. */
 function ResultNote({ result }: { result: SubmitResult }) {
-  const { answer } = result
-  const correctText =
-    answer.value !== undefined
-      ? `${formatNumber(answer.value)}${answer.unit ? ` ${answer.unit}` : ''}`
-      : answer.correct?.map((i) => answer.options?.[i]).join(', ')
+  const correctText = correctAnswerText(result.answer)
 
   return result.correct ? (
     <MarginNote status="correct" animate>
@@ -294,7 +383,76 @@ function ResultNote({ result }: { result: SubmitResult }) {
   )
 }
 
-function Solution({ result }: { result: SubmitResult }) {
+const verdictStatus = { correct: 'correct', incorrect: 'wrong', unclear: 'unclear' } as const
+const stepFallback = {
+  correct: 'Stimmt.',
+  incorrect: 'Hier stimmt etwas nicht.',
+  unclear: 'Das kann ich nicht sicher lesen.',
+} as const
+const finalStatus = { correct: 'correct', incorrect: 'wrong', missing: 'unclear' } as const
+const finalFallback = {
+  correct: 'Dein Endergebnis stimmt.',
+  incorrect: 'Dein Endergebnis stimmt nicht.',
+  missing: 'Ich finde kein Endergebnis. Schreib es zum Schluss deutlich auf.',
+} as const
+
+/** One margin note per step (below the sheet on phones), then the result and the overall verdict. */
+function HandwritingNotes({ result }: { result: Graded }) {
+  const correctText = result.correct ? undefined : correctAnswerText(result.answer)
+  const n = result.steps.length
+  return (
+    <div className="flex flex-col gap-3">
+      {result.steps.map((step, i) => (
+        <MarginNote key={i} status={verdictStatus[step.verdict]} step={i + 1} index={i} animate>
+          {step.studentWork && (
+            <span className="text-fine text-muted-foreground block font-sans font-normal">
+              <RichText text={step.studentWork} />
+            </span>
+          )}
+          <RichText text={step.comment || stepFallback[step.verdict]} />
+        </MarginNote>
+      ))}
+      <MarginNote status={finalStatus[result.final.verdict]} index={n} animate>
+        Ergebnis: <RichText text={result.final.comment || finalFallback[result.final.verdict]} />
+      </MarginNote>
+      <MarginNote status={result.correct ? 'correct' : 'wrong'} index={n + 1} animate>
+        {result.correct ? 'Stimmt!' : 'Nicht ganz.'}
+        {result.summary && (
+          <>
+            {' '}
+            <RichText text={result.summary} />
+          </>
+        )}
+        {correctText && (
+          <>
+            {' '}
+            Richtig ist: <RichText text={correctText} />
+          </>
+        )}
+      </MarginNote>
+    </div>
+  )
+}
+
+const unreadableTips: Record<UnreadableReason, string> = {
+  empty: 'Auf dem Blatt steht noch nichts, das ich lesen kann.',
+  illegible: 'Schreib deutlicher, mit etwas mehr Abstand zwischen den Zeilen.',
+  off_topic: 'Das sieht nicht nach einer Lösung zu dieser Aufgabe aus.',
+  photo_quality: 'Mach das Foto bei gutem Licht, gerade und scharf.',
+}
+
+function UnreadableNote({ reason }: { reason: UnreadableReason }) {
+  return (
+    <MarginNote status="unreadable">
+      Nicht lesbar – schreib etwas größer und gib nochmal ab.
+      <span className="text-fine text-muted-foreground block font-sans font-normal">
+        {unreadableTips[reason]} Das zählt nicht als Versuch.
+      </span>
+    </MarginNote>
+  )
+}
+
+function Solution({ result }: { result: Result }) {
   return (
     <GridPaper as="section" aria-labelledby="solution-heading" contentClassName="py-4">
       <h2 id="solution-heading" className="text-h3">
