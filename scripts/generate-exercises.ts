@@ -1,9 +1,10 @@
 /**
  * Generates exercise drafts from a template.
  * Usage: npm run exercises:generate -- <template.json> [--seed N] [--force]
- * Output: drafts/exercises/<template-id>-<YYYYMMDD>.json (regular draft format → validate → math-checker → import)
+ * Output: drafts/exercises/<template-id>-<YYYYMMDD>.json (regular draft format → validate → math-checker → import).
+ * With --force an existing file of the same template + seed is overwritten in place (same keys), whatever its date.
  */
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { generateExercises } from '../src/features/exercises/template/generate'
 
@@ -24,11 +25,20 @@ const template = JSON.parse(readFileSync(templatePath, 'utf8')) as { id: string;
 const outDir = join('drafts', 'exercises')
 mkdirSync(outDir, { recursive: true })
 
+// Regenerating replaces the existing file of this template + seed (any date), so keys stay the
+// same across days. A new file (with today's date) is only created on the first run.
+const suffix = seed === 1 ? '' : `-seed${seed}`
+const existing = readdirSync(outDir)
+  .filter((f) => new RegExp(`^${template.id}-\\d{8}${suffix}\\.json$`).test(f))
+  .sort()
+  .at(-1)
 const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')
-const outName = `${template.id}-${date}${seed === 1 ? '' : `-seed${seed}`}.json`
+const outName = existing ?? `${template.id}-${date}${suffix}.json`
 const outFile = join(outDir, outName)
-if (existsSync(outFile) && !force) {
-  console.error(`${outFile} exists – use --force to overwrite or --seed N for another variant`)
+if (existing && !force) {
+  console.error(
+    `${outFile} exists – use --force to regenerate it (keys stay the same) or --seed N for another variant`,
+  )
   process.exit(1)
 }
 
