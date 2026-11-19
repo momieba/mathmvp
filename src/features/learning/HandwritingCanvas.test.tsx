@@ -54,7 +54,7 @@ const button = (name: string) => screen.getByRole('button', { name })
 describe('HandwritingCanvas', () => {
   it('offers pen, eraser, undo, redo and clear; history tools start disabled', () => {
     render(<HandwritingCanvas />)
-    expect(screen.getByRole('toolbar', { name: 'Zeichenwerkzeuge' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Zeichenwerkzeuge' })).toBeInTheDocument()
     expect(button('Stift')).toHaveAttribute('aria-pressed', 'true')
     expect(button('Radierer')).toHaveAttribute('aria-pressed', 'false')
     for (const name of ['Rückgängig', 'Wiederholen', 'Leeren']) expect(button(name)).toBeDisabled()
@@ -115,6 +115,33 @@ describe('HandwritingCanvas', () => {
     expect(onChange).toHaveBeenLastCalledWith(false)
   })
 
+  it('ignores move/up of other pointers while a pen stroke is active (palm)', () => {
+    const onChange = vi.fn()
+    render(<HandwritingCanvas onChange={onChange} />)
+    const pen = { pointerId: 1, pointerType: 'pen', isPrimary: true, pressure: 0.5 }
+    const palm = { pointerId: 7, pointerType: 'touch', isPrimary: true }
+    fireEvent.pointerDown(sheet(), { ...pen, clientX: 10, clientY: 10 })
+    fireEvent.pointerDown(sheet(), { ...palm, clientX: 300, clientY: 200 }) // ignored
+    fireEvent.pointerMove(sheet(), { ...palm, clientX: 320, clientY: 220 }) // ignored
+    fireEvent.pointerUp(sheet(), { ...palm, clientX: 320, clientY: 220 }) // must not end the stroke
+    expect(onChange).toHaveBeenLastCalledWith(false) // pen stroke still open, nothing committed
+    fireEvent.pointerMove(sheet(), { ...pen, clientX: 40, clientY: 20 })
+    fireEvent.pointerUp(sheet(), { ...pen, clientX: 40, clientY: 20 })
+    expect(onChange).toHaveBeenLastCalledWith(true)
+  })
+
+  it('can shrink the sheet again, but not over written ink', () => {
+    render(<HandwritingCanvas />)
+    expect(button('Weniger Platz')).toBeDisabled()
+    fireEvent.click(button('Mehr Platz'))
+    expect(button('Weniger Platz')).toBeEnabled()
+    draw(sheet(), 'mouse', 40, 400) // below the default 360 px
+    expect(button('Weniger Platz')).toBeDisabled()
+    fireEvent.click(button('Rückgängig'))
+    fireEvent.click(button('Weniger Platz'))
+    expect(sheet().style.height).toBe('360px')
+  })
+
   it('exports a PNG only when something was written', () => {
     const ref = createRef<HandwritingCanvasHandle>()
     render(<HandwritingCanvas ref={ref} />)
@@ -137,7 +164,7 @@ describe('HandwritingCanvas', () => {
     expect(button('Stift')).toBeDisabled()
 
     rerender(<HandwritingCanvas readOnly />)
-    expect(screen.queryByRole('toolbar')).not.toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Zeichenwerkzeuge' })).not.toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Deine abgegebene Lösung' })).toBeInTheDocument()
   })
 

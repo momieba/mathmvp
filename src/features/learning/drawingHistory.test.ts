@@ -4,6 +4,7 @@ import {
   emptyHistory,
   hasInk,
   historyReducer,
+  MAX_HISTORY,
   planExport,
   type History,
   type HistoryAction,
@@ -60,6 +61,13 @@ describe('historyReducer', () => {
   it('undo/redo on empty stacks are no-ops', () => {
     expect(run({ type: 'undo' })).toBe(emptyHistory)
     expect(run({ type: 'redo' })).toBe(emptyHistory)
+  })
+
+  it('keeps at most MAX_HISTORY undo steps', () => {
+    let h = emptyHistory
+    for (let i = 0; i < MAX_HISTORY + 50; i++) h = historyReducer(h, add(stroke(i, 0)))
+    expect(h.past).toHaveLength(MAX_HISTORY)
+    expect(h.present).toHaveLength(MAX_HISTORY + 50) // nothing drawn is lost, only old undo steps
   })
 
   it('hasInk ignores erasers', () => {

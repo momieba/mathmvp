@@ -10,6 +10,10 @@ export const ERASER_WIDTH = 22
 /** Snapshot history; strokes are shared between snapshots, so clear/undo are cheap. */
 export type History = { past: Stroke[][]; present: Stroke[]; future: Stroke[][] }
 
+/** Undo depth; older snapshots are dropped so long sessions stay small. */
+export const MAX_HISTORY = 200
+const pushPast = (past: Stroke[][], present: Stroke[]) => [...past, present].slice(-MAX_HISTORY)
+
 export const emptyHistory: History = { past: [], present: [], future: [] }
 
 export type HistoryAction =
@@ -19,7 +23,7 @@ export function historyReducer(state: History, action: HistoryAction): History {
   switch (action.type) {
     case 'add':
       return {
-        past: [...state.past, state.present],
+        past: pushPast(state.past, state.present),
         present: [...state.present, action.stroke],
         future: [], // a new stroke ends the redo chain
       }
@@ -35,11 +39,11 @@ export function historyReducer(state: History, action: HistoryAction): History {
     case 'redo': {
       const [next, ...rest] = state.future
       if (!next) return state
-      return { past: [...state.past, state.present], present: next, future: rest }
+      return { past: pushPast(state.past, state.present), present: next, future: rest }
     }
     case 'clear':
       if (state.present.length === 0) return state
-      return { past: [...state.past, state.present], present: [], future: [] }
+      return { past: pushPast(state.past, state.present), present: [], future: [] }
   }
 }
 

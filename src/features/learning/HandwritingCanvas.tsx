@@ -1,4 +1,4 @@
-import { ChevronsDown, Eraser, Pencil, Redo2, Trash2, Undo2 } from 'lucide-react'
+import { ChevronsDown, ChevronsUp, Eraser, Pencil, Redo2, Trash2, Undo2 } from 'lucide-react'
 import {
   forwardRef,
   useCallback,
@@ -46,6 +46,11 @@ type Props = {
 const DEFAULT_ROWS = 18 // Karo rows of the sheet (18 × 20 px = 360 px)
 const MORE_ROWS = 8
 const MAX_ROWS = 60
+const MAX_ROWS_PHONE = 36 // a taller sheet is hard to reach on a phone
+const maxRows = () =>
+  typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 767px)').matches
+    ? MAX_ROWS_PHONE
+    : MAX_ROWS
 const INK_FALLBACK = '#1e3fbf' // Königsblau, light theme token
 const INK_EXPORT = '#1e3fbf' // always dark ink on white for the model, also in dark mode
 
@@ -62,10 +67,14 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     const strokes = history.present
     const current = useRef<Stroke | null>(null)
     const penSeen = useRef(false)
+    const activePointer = useRef<number | null>(null) // the pointer that owns the current stroke
     const [tool, setTool] = useState<'pen' | 'eraser'>('pen')
     const [rows, setRows] = useState(DEFAULT_ROWS)
     const [announcement, setAnnouncement] = useState('')
     const locked = disabled || readOnly
+    // shrinking must not cut off anything that was written
+    const lowestInk = strokes.reduce((m, s) => s.points.reduce((a, p) => Math.max(a, p.y), m), 0)
+    const canShrink = rows > DEFAULT_ROWS && lowestInk <= (rows - MORE_ROWS) * KARO_SIZE - 20
 
     const strokesRef = useRef(strokes)
     useEffect(() => {
@@ -153,8 +162,10 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       if (e.pointerType === 'mouse' && e.button !== 0) return
       if (e.pointerType === 'pen') penSeen.current = true
       if (e.pointerType === 'touch' && penSeen.current) return // palm rejection
+      if (current.current) return // a stroke is in progress: further pointers (palm) are ignored
       e.preventDefault()
       e.currentTarget.setPointerCapture(e.pointerId)
+      activePointer.current = e.pointerId
       current.current = {
         points: [pointOf(e, e.currentTarget.getBoundingClientRect())],
         erase: tool === 'eraser',
@@ -164,7 +175,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
 
     function onPointerMove(e: ReactPointerEvent<HTMLCanvasElement>) {
       const stroke = current.current
-      if (!stroke) return
+      if (!stroke || e.pointerId !== activePointer.current) return
       // Coalesced events give smooth lines with fast pens.
       const events = e.nativeEvent.getCoalescedEvents?.() ?? []
       const rect = e.currentTarget.getBoundingClientRect()
@@ -182,10 +193,11 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       }
     }
 
-    function onPointerUp() {
+    function onPointerUp(e: ReactPointerEvent<HTMLCanvasElement>) {
       const stroke = current.current
-      if (!stroke) return
+      if (!stroke || e.pointerId !== activePointer.current) return
       current.current = null
+      activePointer.current = null
       dispatch({ type: 'add', stroke })
       setAnnouncement('')
     }
@@ -252,7 +264,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
           <>
             {/* On phones the toolbar sits at the bottom edge, within thumb reach. */}
             <div
-              role="toolbar"
+              role="group"
               aria-label="Zeichenwerkzeuge"
               className="bg-background flex flex-wrap items-center gap-1 border-t-2 p-2 max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-30 max-md:flex-nowrap max-md:justify-between max-md:px-3 max-md:pb-[max(0.5rem,env(safe-area-inset-bottom))]"
             >
@@ -291,9 +303,15 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
               <ToolButton
                 label="Mehr Platz"
                 icon={<ChevronsDown className="size-4" />}
-                onClick={() => setRows((r) => Math.min(MAX_ROWS, r + MORE_ROWS))}
-                disabled={disabled || rows >= MAX_ROWS}
+                onClick={() => setRows((r) => Math.min(maxRows(), r + MORE_ROWS))}
+                disabled={disabled || rows >= maxRows()}
                 className="md:ml-auto"
+              />
+              <ToolButton
+                label="Weniger Platz"
+                icon={<ChevronsUp className="size-4" />}
+                onClick={() => setRows((r) => Math.max(DEFAULT_ROWS, r - MORE_ROWS))}
+                disabled={disabled || !canShrink}
               />
             </div>
           </>
