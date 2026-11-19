@@ -94,9 +94,10 @@ export function DatenschutzPage() {
           ähnlichen Technologien für Werbung, Analyse oder Tracking ein.
         </p>
         <p>
-          Wenn du in der App zwischen heller und dunkler Darstellung wechselst, merkt sich dein
-          Browser diese Auswahl ebenfalls im lokalen Speicher (Schlüssel „theme“). Der Wert enthält
-          keine Personendaten und wird nicht an uns übertragen.
+          Wenn du auf dieser Website zwischen heller und dunkler Darstellung wechselst, merkt sich
+          dein Browser diese Auswahl ebenfalls im lokalen Speicher (Schlüssel „theme“). Der Wert
+          enthält keine Personendaten und wird nicht an uns übertragen. Wählst du wieder „System“,
+          wird der gespeicherte Wert gelöscht.
         </p>
       </Section>
 

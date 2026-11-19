@@ -42,3 +42,19 @@ describe('theme', () => {
     applyTheme('light')
   })
 })
+
+describe('theme-color', () => {
+  it('follows an explicit choice and restores the defaults for "system"', () => {
+    document.head.innerHTML =
+      '<meta name="theme-color" content="#fafbfd" media="(prefers-color-scheme: light)">' +
+      '<meta name="theme-color" content="#1e2b28" media="(prefers-color-scheme: dark)">'
+    const metas = [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')]
+    setTheme('dark')
+    expect(metas.map((m) => m.content)).toEqual(['#1e2b28', '#1e2b28'])
+    setTheme('light')
+    expect(metas.map((m) => m.content)).toEqual(['#fafbfd', '#fafbfd'])
+    setTheme('system')
+    expect(metas.map((m) => m.content)).toEqual(['#fafbfd', '#1e2b28'])
+    document.head.innerHTML = ''
+  })
+})

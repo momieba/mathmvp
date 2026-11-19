@@ -274,14 +274,19 @@
 
 /* Bedienelemente: Touch-Ziel mindestens 44 px, UI-Schrift 16 px, ein einheitlicher Fokus-Ring.
    Bewusst ohne @layer, damit die Regeln die Größen der (per CLI erzeugten) shadcn-Komponenten
-   überstimmen, ohne diese Dateien anzufassen. */
+   überstimmen, ohne diese Dateien anzufassen. Mindestgrößen kollidieren mit keiner Utility
+   (min-height/min-width). Die Schriftgröße setzen wir nur dort, wo keine eigene Textrolle
+   (`text-prose` o. ä.) am Element steht – sonst würde diese Regel die Utility überstimmen. */
 [data-slot='button'],
 [data-slot='input'] {
   min-height: 2.75rem;
-  font-size: 1rem;
 }
 [data-slot='button'] {
   min-width: 2.75rem;
+  font-size: 1rem;
+}
+[data-slot='input']:not([class*='text-prose']) {
+  font-size: 1rem;
 }
 :focus-visible {
   outline: 2px solid var(--ring);

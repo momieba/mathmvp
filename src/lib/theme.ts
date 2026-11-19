@@ -33,9 +33,21 @@ function systemPrefersDark(): boolean {
   }
 }
 
+const THEME_COLORS = { light: '#fafbfd', dark: '#1e2b28' } as const
+
+/** Browser UI color: follows an explicit choice; "system" restores the media-query defaults from index.html. */
+function applyThemeColor(theme: Theme, dark: boolean): void {
+  document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((meta) => {
+    meta.dataset.original ??= meta.content
+    meta.content =
+      theme === 'system' ? meta.dataset.original : THEME_COLORS[dark ? 'dark' : 'light']
+  })
+}
+
 export function applyTheme(theme: Theme): void {
   const dark = theme === 'dark' || (theme === 'system' && systemPrefersDark())
   document.documentElement.classList.toggle('dark', dark)
+  applyThemeColor(theme, dark)
 }
 
 export function setTheme(theme: Theme): void {
