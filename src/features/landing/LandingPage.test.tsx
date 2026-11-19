@@ -15,7 +15,7 @@ describe('LandingPage', () => {
   })
 
   it('has exactly one h1 with the value proposition', () => {
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/deinem Lehrplan/)
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Lehrplan/)
   })
 
   it('links every primary CTA to the app entry (login or, while auth is off, the app)', () => {

@@ -5,32 +5,39 @@ export const site = {
     'Mathe üben für Klasse 5 bis 13 – passend zu Bundesland, Schulform und Klasse. Mit Lösungsweg Schritt für Schritt. Kostenlos in der Beta.',
 }
 
+/** Hero copy: promise only what the app does today (no handwriting correction yet). */
+export const hero = {
+  title: 'Übe, was bei dir im Lehrplan steht.',
+  text: 'Aufgaben für dein Bundesland, deine Schulform und deine Klasse – jede mit Lösungsweg und mit Hinweisen, wenn du feststeckst.',
+  facts: 'Kostenlos in der Beta. Ohne Passwort. Werbefrei.',
+}
+
+export const intro = {
+  title: 'Im Unterricht ging’s zu schnell?',
+  text: 'Im Schulbuch steht oft nur das Ergebnis, und Nachhilfe ist nicht immer da, wenn du sie brauchst. Mit Mathe-Training übst du in deinem Tempo und siehst bei jeder Aufgabe, wie man auf die Lösung kommt.',
+}
+
 export const features = [
   {
-    icon: 'map',
     title: 'Passend zu deinem Lehrplan',
-    text: 'Du wählst Bundesland, Schulform und Klasse – und übst genau die Themen, die bei dir gerade drankommen.',
+    text: 'Du wählst Bundesland, Schulform und Klasse und übst genau die Themen, die bei dir gerade drankommen.',
   },
   {
-    icon: 'steps',
     title: 'Lösungsweg Schritt für Schritt',
     text: 'Zu jeder Aufgabe gibt es eine Musterlösung in einzelnen Schritten. Und Hinweise, wenn du feststeckst – ohne gleich alles zu verraten.',
   },
   {
-    icon: 'levels',
-    title: 'Vom Einstieg bis zur Klausur',
-    text: 'Vier Schwierigkeitsstufen und abwechslungsreiche Aufgabentypen: Rechnen, Multiple Choice, Zuordnen, Lückentext und mehr.',
+    title: 'Schwer genug, nie zu schwer',
+    text: 'Vier Schwierigkeitsstufen von leicht bis sehr schwer. Die nächste Aufgabe richtet sich nach deinem Punktestand. Aktuell gibt es Rechenaufgaben und Multiple Choice.',
   },
   {
-    icon: 'video',
     title: 'Erklärvideos zu jedem Thema',
     text: 'Kurze Videos erklären die Grundlagen, bevor du loslegst.',
     soon: true,
   },
   {
-    icon: 'shield',
     title: 'Werbefrei und datensparsam',
-    text: 'Keine Werbung, kein Tracking. Anmelden geht ohne Passwort – per E-Mail oder Google.',
+    text: 'Keine Werbung, kein Tracking. Du brauchst kein Passwort.',
   },
 ] as const
 
@@ -66,7 +73,7 @@ export const faq = [
   },
   {
     q: 'Brauche ich ein Passwort?',
-    a: 'Nein. Du meldest dich mit deinem Google-Konto oder per E-Mail an – du bekommst dann einen Anmeldelink.',
+    a: 'Nein. In der Beta startest du ohne Anmeldung. Später meldest du dich mit deinem Google-Konto oder per E-Mail an – ein Passwort brauchst du nie.',
   },
   {
     q: 'Was passiert mit meinen Daten?',

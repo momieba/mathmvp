@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router'
-import { SiteFooter } from '@/components/layout/SiteFooter'
+import { PageShell } from '@/components/layout/PageShell'
+import { PublicHeader } from '@/components/layout/PublicHeader'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { sendEmailOtp, signInWithGoogle, verifyEmailOtp } from './api'
@@ -45,63 +45,60 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col">
-      <main className="flex flex-1 items-center justify-center p-4">
-        <Card className="w-full max-w-sm">
-          <CardHeader>
-            <CardTitle>Anmelden</CardTitle>
-            <CardDescription>Ohne Passwort – mit Google oder per E-Mail-Code.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <Button variant="outline" disabled={busy} onClick={() => void run(signInWithGoogle)}>
-              Mit Google anmelden
+    <PageShell header={<PublicHeader />} width="narrow">
+      <h1 className="text-title">Anmelden</h1>
+      <p className="text-prose text-muted-foreground mt-2">
+        Ohne Passwort – mit Google oder per E-Mail-Code.
+      </p>
+      <div className="mt-8 flex flex-col gap-5">
+        <Button variant="outline" disabled={busy} onClick={() => void run(signInWithGoogle)}>
+          Mit Google anmelden
+        </Button>
+        <p className="text-fine text-muted-foreground">oder per E-Mail</p>
+        {step === 'email' ? (
+          <form onSubmit={onSubmitEmail} className="flex flex-col gap-3">
+            <Label htmlFor="email">E-Mail-Adresse</Label>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <Button type="submit" disabled={busy}>
+              Code senden
             </Button>
-            <div className="text-muted-foreground text-center text-xs">oder</div>
-            {step === 'email' ? (
-              <form onSubmit={onSubmitEmail} className="flex flex-col gap-2">
-                <Label htmlFor="email">E-Mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-                <Button type="submit" disabled={busy}>
-                  Code senden
-                </Button>
-              </form>
-            ) : (
-              <form onSubmit={onSubmitCode} className="flex flex-col gap-2">
-                <Label htmlFor="code">Code aus der E-Mail an {email}</Label>
-                <Input
-                  id="code"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  pattern="[0-9]{6}"
-                  maxLength={6}
-                  required
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.trim())}
-                />
-                <Button type="submit" disabled={busy}>
-                  Anmelden
-                </Button>
-                <Button type="button" variant="link" onClick={() => setStep('email')}>
-                  Andere E-Mail verwenden
-                </Button>
-              </form>
-            )}
-            {error && (
-              <p role="alert" className="text-destructive text-sm">
-                {error}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </main>
-      <SiteFooter />
-    </div>
+          </form>
+        ) : (
+          <form onSubmit={onSubmitCode} className="flex flex-col gap-3">
+            <Label htmlFor="code" className="leading-snug">
+              Code aus der E-Mail an {email}
+            </Label>
+            <Input
+              id="code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              required
+              value={code}
+              onChange={(e) => setCode(e.target.value.trim())}
+            />
+            <Button type="submit" disabled={busy}>
+              Anmelden
+            </Button>
+            <Button type="button" variant="link" onClick={() => setStep('email')}>
+              Andere E-Mail verwenden
+            </Button>
+          </form>
+        )}
+        {error && (
+          <p role="alert" className="text-destructive">
+            {error}
+          </p>
+        )}
+      </div>
+    </PageShell>
   )
 }

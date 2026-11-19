@@ -1,53 +1,65 @@
+import type { CSSProperties, ReactNode } from 'react'
 import { Formula } from '@/components/math/Formula'
+import { StatusMark } from '@/components/paper/StatusMark'
 
-/** Static product preview: an example exercise with solution steps, rendered with real KaTeX. */
-export function ExercisePreview() {
+// Prerendered with the landing page: static markup only, the tick animation is pure CSS.
+
+const steps: { tex: string }[] = [
+  { tex: 'a^2 + b^2 = c^2' },
+  { tex: 'h^2 = 5^2 - 3^2 = 25 - 9 = 16' },
+  { tex: String.raw`h = \sqrt{16} = 4` },
+]
+
+/**
+ * Hero demo: an exercise on squared paper with its worked solution; the ticks in the margin are drawn
+ * one after another once. Shows what exists today (model solution) – not a handwriting correction.
+ */
+export function ExercisePreview({ className }: { className?: string }) {
   return (
-    <figure
-      aria-label="Beispielaufgabe mit Lösungsweg"
-      className="bg-card shadow-primary/10 relative rounded-2xl border p-6 shadow-xl"
-    >
-      <div className="text-muted-foreground mb-4 flex items-center justify-between text-xs">
-        <span className="bg-secondary rounded-full px-2.5 py-1 font-medium">
-          Klasse 9 · Satz des Pythagoras
-        </span>
-        <span>mittel</span>
+    <figure aria-label="Beispielaufgabe mit Lösungsweg" className={className}>
+      <div className="text-fine mb-2 flex items-baseline justify-between">
+        <span className="casual">Klasse 9, Satz des Pythagoras</span>
+        <span className="text-muted-foreground">mittel</span>
       </div>
-      <p className="text-foreground mb-4 text-sm leading-relaxed">
+      <p className="text-prose mb-4">
         Eine Leiter ist 5 m lang und steht 3 m von der Wand entfernt. In welcher Höhe lehnt sie an
         der Wand?
       </p>
-      <ol className="space-y-3 text-sm">
-        <li className="flex items-baseline gap-3">
-          <StepNumber n={1} />
-          <Formula tex="a^2 + b^2 = c^2" />
-        </li>
-        <li className="flex items-baseline gap-3">
-          <StepNumber n={2} />
-          <Formula tex="h^2 = 5^2 - 3^2 = 25 - 9 = 16" />
-        </li>
-        <li className="flex items-baseline gap-3">
-          <StepNumber n={3} />
-          <span>
-            <Formula tex="h = \sqrt{16} = 4" />
-            <span className="text-muted-foreground"> – die Leiter lehnt in 4 m Höhe.</span>
-          </span>
-        </li>
-      </ol>
-      <figcaption className="text-muted-foreground mt-5 border-t pt-4 text-xs">
-        Beispiel: So sieht ein Lösungsweg aus.
+      <div className="grid-paper rounded-paper shadow-sheet border">
+        <ol>
+          {steps.map((step, i) => (
+            <Row
+              key={step.tex}
+              mark={
+                <div className="margin-animate" style={{ '--i': i } as CSSProperties}>
+                  <StatusMark status="correct" compact />
+                </div>
+              }
+            >
+              <Formula tex={step.tex} />
+            </Row>
+          ))}
+        </ol>
+        <p className="text-prose border-t-2 px-4 py-3">
+          Die Leiter lehnt in{' '}
+          <mark className="bg-marker text-marker-foreground rounded-[2px] px-1 font-semibold">
+            4 m
+          </mark>{' '}
+          Höhe an der Wand.
+        </p>
+      </div>
+      <figcaption className="text-muted-foreground text-fine mt-3">
+        So sieht ein Lösungsweg aus: jeder Schritt einzeln, zum Nachvollziehen.
       </figcaption>
     </figure>
   )
 }
 
-function StepNumber({ n }: { n: number }) {
+function Row({ children, mark }: { children: ReactNode; mark: ReactNode }) {
   return (
-    <span
-      aria-hidden="true"
-      className="bg-primary text-primary-foreground grid size-6 shrink-0 place-items-center rounded-full text-xs font-semibold"
-    >
-      {n}
-    </span>
+    <li className="grid min-h-[3.5rem] grid-cols-[minmax(0,1fr)_4.5rem] items-stretch">
+      <div className="flex items-center overflow-x-auto px-4 text-lg">{children}</div>
+      <div className="flex items-center border-l-2 px-3">{mark}</div>
+    </li>
   )
 }
