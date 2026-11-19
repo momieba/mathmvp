@@ -1,14 +1,29 @@
-// Grades a handwritten solution (PNG from the drawing canvas) with Gemini against the reference
-// solution, records the attempt and returns feedback + the model solution.
-// The image is only forwarded to Gemini and never stored.
+// Grades a handwritten solution (drawing from the canvas, later also photos) step by step against
+// the reference solution, records the attempt and returns the correction + the model solution.
+// The image is only forwarded to the model and never stored or logged.
 //
-// Secrets (Supabase → Edge Functions → Secrets): GEMINI_API_KEY, optional GEMINI_MODEL.
+// Secrets (Supabase → Edge Functions → Secrets):
+//   GEMINI_API_KEY                     API key of the provider `gemini-developer`
+//   GRADING_PROVIDER (optional)        adapter name, default `gemini-developer`
+//   GEMINI_MODEL (optional)            model id, default see DEFAULT_MODEL
+//   GRADING_LIMIT_PER_MINUTE / _PER_DAY / _GLOBAL_PER_DAY (optional) defaults 6 / 80 / 3000, 0 = off
 // SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are provided by the runtime.
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import {
+  GRADABLE_TYPES,
+  buildPrompt,
+  detectImageMime,
+  evaluateFeedback,
+  exceededLimit,
+  parseLimits,
+  stripDataUrl,
+} from '../_shared/grading.ts'
+import { ProviderError, gradeWithModel } from '../_shared/provider.ts'
 
-const MODEL = Deno.env.get('GEMINI_MODEL') ?? 'gemini-3.8-flash'
-const MAX_IMAGE_BYTES = 2_000_000 // base64 length limit (~1.5 MB PNG)
-const MAX_GRADINGS_PER_MINUTE = 6
+const DEFAULT_MODEL = 'gemini-3.8-flash'
+const MAX_IMAGE_BASE64 = 2_000_000 // base64 length limit
+const MINUTE = 60_000
+const DAY = 24 * 60 * MINUTE
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -16,112 +31,133 @@ const cors = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-const json = (body: unknown, status = 200) =>
+const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { ...cors, 'Content-Type': 'application/json' },
+    headers: { ...cors, 'Content-Type': 'application/json', ...headers },
   })
 
-type Feedback = {
-  correct: boolean
-  readable: boolean
-  summary: string
-  errors: { step: string; explanation: string }[]
-}
+const limitMessages = {
+  minute: 'Zu viele Korrekturen in kurzer Zeit. Warte eine Minute und gib dann noch einmal ab.',
+  day: 'Du hast heute viele Lösungen korrigieren lassen und das Tageslimit erreicht. Üb morgen weiter oder nimm in der Zwischenzeit Aufgaben mit Auswahlantworten.',
+  global:
+    'Die Korrektur ist heute sehr gefragt und gerade ausgelastet. Versuch es morgen noch einmal.',
+} as const
 
-const feedbackSchema = {
-  type: 'OBJECT',
-  properties: {
-    readable: {
-      type: 'BOOLEAN',
-      description: 'false if the handwriting cannot be read or the image is empty/off-topic',
-    },
-    correct: {
-      type: 'BOOLEAN',
-      description: 'true only if the final result is correct and the way is mathematically sound',
-    },
-    summary: {
-      type: 'STRING',
-      description: 'One or two encouraging sentences in German (Du-Form)',
-    },
-    errors: {
-      type: 'ARRAY',
-      description: 'Each concrete mistake, in the order it occurs. Empty if correct.',
-      items: {
-        type: 'OBJECT',
-        properties: {
-          step: {
-            type: 'STRING',
-            description: 'What the student wrote at that point (short, may contain LaTeX in $…$)',
-          },
-          explanation: {
-            type: 'STRING',
-            description:
-              'What is wrong and how to fix it, in German, Du-Form, without simply giving the full solution',
-          },
-        },
-        required: ['step', 'explanation'],
-      },
-    },
+// Etappe 4 swaps this for `record_graded_attempt` (hint credit); until then the function inserts
+// the attempt itself with the service role.
+type Admin = ReturnType<typeof createClient>
+async function recordGradedAttempt(
+  admin: Admin,
+  args: {
+    userId: string
+    exerciseId: string
+    subtopicId: string
+    correct: boolean
+    answer: Record<string, unknown>
+    feedback: Record<string, unknown>
   },
-  required: ['readable', 'correct', 'summary', 'errors'],
+) {
+  const { error } = await admin.from('attempts').insert({
+    user_id: args.userId,
+    exercise_id: args.exerciseId,
+    subtopic_id: args.subtopicId,
+    correct: args.correct,
+    answer: args.answer,
+    feedback: args.feedback,
+  })
+  return error
 }
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'method not allowed' }, 405)
 
+  const provider = Deno.env.get('GRADING_PROVIDER') ?? 'gemini-developer'
   const apiKey = Deno.env.get('GEMINI_API_KEY')
-  if (!apiKey) return json({ error: 'GEMINI_API_KEY is not configured' }, 500)
+  if (!apiKey) return json({ error: 'Die Korrektur ist nicht eingerichtet.' }, 500)
+  const model = Deno.env.get('GEMINI_MODEL') ?? DEFAULT_MODEL
 
   // --- who is calling? (JWT verified by the platform; resolve the user from it) ---------------
-  const authHeader = req.headers.get('Authorization') ?? ''
   const userClient = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_ANON_KEY')!,
-    {
-      global: { headers: { Authorization: authHeader } },
-    },
+    { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } },
   )
   const { data: userData, error: userError } = await userClient.auth.getUser()
-  if (userError || !userData.user) return json({ error: 'not authenticated' }, 401)
+  if (userError || !userData.user) return json({ error: 'Bitte melde dich neu an.' }, 401)
   const userId = userData.user.id
 
   // --- input ------------------------------------------------------------------------------------
-  let body: { exerciseId?: string; image?: string }
+  let body: { exerciseId?: unknown; image?: unknown; kind?: unknown }
   try {
     body = await req.json()
   } catch {
     return json({ error: 'invalid JSON' }, 400)
   }
-  const image = (body.image ?? '').replace(/^data:image\/png;base64,/, '')
-  if (!body.exerciseId || !image) return json({ error: 'exerciseId and image are required' }, 400)
-  if (image.length > MAX_IMAGE_BYTES) return json({ error: 'image too large' }, 413)
+  if (typeof body.exerciseId !== 'string' || typeof body.image !== 'string') {
+    return json({ error: 'exerciseId and image are required' }, 400)
+  }
+  const image = stripDataUrl(body.image)
+  if (image === '') return json({ error: 'exerciseId and image are required' }, 400)
+  if (image.length > MAX_IMAGE_BASE64) {
+    return json({ error: 'Das Bild ist zu groß. Schreib etwas kleiner oder lösch Unnötiges.' }, 413)
+  }
+  const mime = detectImageMime(image)
+  if (!mime) return json({ error: 'Dieses Bildformat wird nicht unterstützt.' }, 400)
+  const kind = body.kind === 'photo' ? 'photo' : 'drawing'
 
   const admin = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    {
-      auth: { persistSession: false },
-    },
+    { auth: { persistSession: false } },
   )
 
-  // --- simple per-user rate limit (protects the Gemini quota) -----------------------------------
-  const since = new Date(Date.now() - 60_000).toISOString()
-  const { count } = await admin
-    .from('attempts')
-    .select('id', { count: 'exact', head: true })
+  // --- rate limit (counts every request, also unreadable ones and failures) -----------------------
+  const now = Date.now()
+  await admin
+    .from('grading_requests')
+    .delete()
     .eq('user_id', userId)
-    .not('feedback', 'is', null)
-    .gte('created_at', since)
-  if ((count ?? 0) >= MAX_GRADINGS_PER_MINUTE) {
+    .lt('created_at', new Date(now - 2 * DAY).toISOString())
+  const { data: reqRow, error: reqError } = await admin
+    .from('grading_requests')
+    .insert({ user_id: userId })
+    .select('id')
+    .single()
+  if (reqError || !reqRow) {
+    console.error('grading_requests insert failed', reqError?.message)
     return json(
-      {
-        error: 'Zu viele Korrekturen in kurzer Zeit – warte kurz und versuch es dann noch einmal.',
-      },
-      429,
+      { error: 'Die Korrektur ist gerade nicht verfügbar. Versuch es gleich noch einmal.' },
+      503,
     )
   }
+  const countSince = async (ms: number, ownOnly: boolean) => {
+    let q = admin
+      .from('grading_requests')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', new Date(now - ms).toISOString())
+    if (ownOnly) q = q.eq('user_id', userId)
+    const { count } = await q
+    return count ?? 0
+  }
+  const [minute, day, globalDay] = await Promise.all([
+    countSince(MINUTE, true),
+    countSince(DAY, true),
+    countSince(DAY, false),
+  ])
+  const exceeded = exceededLimit(
+    { minute, day, globalDay },
+    parseLimits((name) => Deno.env.get(name)),
+  )
+  if (exceeded) {
+    await admin.from('grading_requests').delete().eq('id', reqRow.id) // rejected: does not count
+    return json({ error: limitMessages[exceeded] }, 429, {
+      'Retry-After': exceeded === 'minute' ? '60' : '3600',
+    })
+  }
+  const setOutcome = (outcome: 'graded' | 'unreadable') =>
+    admin.from('grading_requests').update({ outcome }).eq('id', reqRow.id)
 
   // --- exercise + reference solution (service role: solutions are not readable by students) -----
   const { data: exercise } = await admin
@@ -130,88 +166,100 @@ Deno.serve(async (req) => {
     .eq('id', body.exerciseId)
     .eq('status', 'published')
     .maybeSingle()
-  if (!exercise) return json({ error: 'exercise not found' }, 404)
+  if (!exercise) return json({ error: 'Diese Aufgabe gibt es nicht.' }, 404)
+  if (!(GRADABLE_TYPES as readonly string[]).includes(exercise.type)) {
+    return json({ error: 'Diese Aufgabe wird nicht handschriftlich korrigiert.' }, 400)
+  }
   const { data: solution } = await admin
     .from('exercise_solutions')
     .select('answer, solution')
     .eq('exercise_id', exercise.id)
     .single()
-  if (!solution) return json({ error: 'solution missing' }, 500)
+  if (!solution) return json({ error: 'Zu dieser Aufgabe fehlt die Musterlösung.' }, 500)
 
-  // --- ask Gemini -------------------------------------------------------------------------------
-  const instructions = [
-    'Du bist eine freundliche, genaue Mathe-Nachhilfelehrkraft für Schülerinnen und Schüler (Klasse 5–13).',
-    'Auf dem Bild steht die handschriftliche Lösung einer Schülerin oder eines Schülers zu der folgenden Aufgabe.',
-    'Vergleiche sie mit der Musterlösung. Akzeptiere auch andere richtige Lösungswege und gleichwertige Schreibweisen',
-    '(Komma statt Punkt, gekürzte/ungekürzte Brüche, sinnvolle Rundung). Bewerte nur, was wirklich auf dem Bild steht – erfinde nichts.',
-    'Nenne jeden konkreten Fehler mit der Stelle, an der er passiert, und erkläre kurz, wie man ihn vermeidet.',
-    'Wenn das Bild leer, unleserlich oder themenfremd ist: readable = false, correct = false.',
-    'Schreibe auf Deutsch in Du-Form, ermutigend, ohne die komplette Lösung vorzurechnen. Mathe in $…$ (LaTeX).',
-    '',
-    `AUFGABE:\n${exercise.prompt}`,
-    '',
-    `ERWARTETE ANTWORT (intern, JSON):\n${JSON.stringify(solution.answer)}`,
-    '',
-    `MUSTERLÖSUNG (intern, JSON):\n${JSON.stringify(solution.solution)}`,
-  ].join('\n')
-
-  const geminiRes = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: instructions },
-              { inline_data: { mime_type: 'image/png', data: image } },
-            ],
-          },
-        ],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          responseSchema: feedbackSchema,
-          temperature: 0.2,
+  // --- ask the model ----------------------------------------------------------------------------
+  const prompt = buildPrompt({
+    type: exercise.type,
+    prompt: exercise.prompt,
+    answer: solution.answer,
+    solution: solution.solution,
+  })
+  let feedback
+  try {
+    feedback = await gradeWithModel({
+      provider,
+      apiKey,
+      model,
+      system: prompt.system,
+      user: prompt.user,
+      image: { mime, base64: image },
+    })
+  } catch (e) {
+    const err = e instanceof ProviderError ? e : null
+    // Only kind/status – never bodies (they could contain the image or the student's work).
+    console.error('grading failed', err?.kind ?? 'unknown', err?.status ?? '')
+    if (err?.kind === 'timeout') {
+      return json(
+        {
+          error:
+            'Die Korrektur hat zu lange gedauert. Gib deine Lösung noch einmal ab – deine Zeichnung bleibt erhalten.',
         },
-      }),
-    },
-  )
-  if (!geminiRes.ok) {
-    console.error('gemini error', geminiRes.status, await geminiRes.text())
+        504,
+      )
+    }
+    if (err?.kind === 'rate_limited') {
+      return json(
+        {
+          error: 'Die Korrektur ist gerade ausgelastet. Warte einen Moment und gib noch einmal ab.',
+        },
+        503,
+      )
+    }
     return json(
-      { error: 'Die Korrektur ist gerade nicht verfügbar. Bitte versuch es später noch einmal.' },
+      {
+        error:
+          'Die Korrektur ist gerade nicht verfügbar. Versuch es in ein paar Minuten noch einmal.',
+      },
       502,
     )
   }
-  const geminiJson = await geminiRes.json()
-  let feedback: Feedback
-  try {
-    feedback = JSON.parse(geminiJson.candidates[0].content.parts[0].text) as Feedback
-  } catch {
-    console.error('unexpected gemini response', JSON.stringify(geminiJson).slice(0, 500))
-    return json({ error: 'Die Korrektur konnte nicht ausgewertet werden.' }, 502)
+
+  const outcome = evaluateFeedback(feedback, { type: exercise.type, answer: solution.answer })
+
+  // Unreadable: no attempt, no penalty; the hints already revealed stay as they are.
+  if (outcome.status === 'unreadable') {
+    await setOutcome('unreadable')
+    return json({ status: 'unreadable', reason: outcome.reason })
   }
 
-  // Unreadable images do not count as an attempt (no penalty for a bad photo/drawing).
-  if (feedback.readable) {
-    const { error: insertError } = await admin.from('attempts').insert({
-      user_id: userId,
-      exercise_id: exercise.id,
-      subtopic_id: exercise.subtopic_id,
-      correct: feedback.correct === true,
-      answer: { kind: 'handwritten' },
-      feedback: { ...feedback, model: MODEL },
-    })
-    if (insertError) console.error('attempt insert failed', insertError.message)
+  const insertError = await recordGradedAttempt(admin, {
+    userId,
+    exerciseId: exercise.id,
+    subtopicId: exercise.subtopic_id,
+    correct: outcome.correct,
+    answer: { kind },
+    feedback: {
+      summary: outcome.summary,
+      steps: outcome.steps,
+      final: outcome.final,
+      model,
+    },
+  })
+  if (insertError) {
+    console.error('attempt insert failed', insertError.message)
+    return json(
+      { error: 'Deine Abgabe konnte nicht gespeichert werden. Gib sie noch einmal ab.' },
+      500,
+    )
   }
+  await setOutcome('graded')
 
   return json({
-    readable: feedback.readable,
-    correct: feedback.readable && feedback.correct === true,
-    summary: feedback.summary,
-    errors: feedback.errors ?? [],
+    status: 'graded',
+    correct: outcome.correct,
+    steps: outcome.steps,
+    final: outcome.final,
+    summary: outcome.summary,
     answer: solution.answer,
     solution: solution.solution,
   })

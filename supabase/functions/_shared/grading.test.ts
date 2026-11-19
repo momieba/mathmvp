@@ -1,0 +1,260 @@
+import {
+  DEFAULT_LIMITS,
+  buildPrompt,
+  checkNumericValue,
+  detectImageMime,
+  evaluateFeedback,
+  exceededLimit,
+  normalizeModelFeedback,
+  parseLimits,
+  parseStudentNumber,
+  stripDataUrl,
+  type ModelFeedback,
+} from './grading.ts'
+
+const feedback = (over: Partial<ModelFeedback> = {}): ModelFeedback => ({
+  readable: true,
+  steps: [
+    { studentWork: '$h^2 = 5^2 - 3^2$', verdict: 'correct', comment: 'Stimmt.', referenceStep: 1 },
+    { studentWork: '$h = 4$', verdict: 'correct', comment: 'Stimmt.', referenceStep: 2 },
+  ],
+  final: { studentValue: '4 m', verdict: 'correct', comment: 'Stimmt.' },
+  summary: 'Gut gerechnet.',
+  ...over,
+})
+
+const answer = { value: 4, unit: 'm', tolerance: 0 }
+
+describe('parseStudentNumber', () => {
+  it.each([
+    ['3,5', 3.5],
+    ['3.5', 3.5],
+    ['−2', -2],
+    ['7/2', 3.5],
+    ['\\frac{7}{2}', 3.5],
+    ['x = 5 cm', 5],
+    ['h ≈ 12,57 cm', 12.57],
+    ['1.234,5', 1234.5],
+    ['1,234.5', 1234.5],
+    ['$4\\,\\text{m}$', 4],
+    ['10 - 3 = 7', 7],
+    ['50 %', 50],
+  ])('reads %s', (text, expected) => {
+    expect(parseStudentNumber(text)).toBeCloseTo(expected, 9)
+  })
+
+  it.each([[''], [null], ['kein Ergebnis'], ['5 oder 6'], ['1/0']])('rejects %j', (text) => {
+    expect(parseStudentNumber(text as string | null)).toBeNull()
+  })
+})
+
+describe('checkNumericValue', () => {
+  it('applies the tolerance like submit_answer', () => {
+    expect(checkNumericValue('12,57', { value: 12.566, tolerance: 0.01 })).toBe(true)
+    expect(checkNumericValue('12,6', { value: 12.566, tolerance: 0.01 })).toBe(false)
+    expect(checkNumericValue('4', { value: 4 })).toBe(true)
+  })
+
+  it('returns null if the value cannot be read', () => {
+    expect(checkNumericValue('?', { value: 4 })).toBeNull()
+    expect(checkNumericValue('4', {})).toBeNull()
+  })
+})
+
+describe('evaluateFeedback', () => {
+  it('is correct if the final result is right and no step is wrong', () => {
+    const r = evaluateFeedback(feedback(), { type: 'numeric', answer })
+    expect(r).toMatchObject({ status: 'graded', correct: true })
+  })
+
+  it('unclear steps do not make the result wrong', () => {
+    const f = feedback()
+    f.steps[0]!.verdict = 'unclear'
+    expect(evaluateFeedback(f, { type: 'numeric', answer })).toMatchObject({ correct: true })
+  })
+
+  it('one incorrect step makes it wrong even with a correct final result', () => {
+    const f = feedback()
+    f.steps[0]!.verdict = 'incorrect'
+    expect(evaluateFeedback(f, { type: 'numeric', answer })).toMatchObject({
+      status: 'graded',
+      correct: false,
+      final: { verdict: 'correct' },
+    })
+  })
+
+  it('server value check wins over a model that calls a wrong result correct', () => {
+    const f = feedback({ final: { studentValue: '8 m', verdict: 'correct', comment: 'Stimmt.' } })
+    const r = evaluateFeedback(f, { type: 'numeric', answer })
+    expect(r).toMatchObject({ status: 'graded', correct: false, final: { verdict: 'incorrect' } })
+    if (r.status === 'graded') {
+      expect(r.final.comment).toContain('nicht')
+      expect(r.summary).not.toBe('Gut gerechnet.')
+    }
+  })
+
+  it('server value check also corrects a model that calls a right result wrong', () => {
+    const f = feedback({ final: { studentValue: '4', verdict: 'incorrect', comment: 'Falsch.' } })
+    const r = evaluateFeedback(f, { type: 'numeric', answer })
+    expect(r).toMatchObject({ status: 'graded', correct: true, final: { verdict: 'correct' } })
+  })
+
+  it('falls back to the model verdict if the value cannot be parsed', () => {
+    const f = feedback({ final: { studentValue: 'vier', verdict: 'correct', comment: 'ok' } })
+    expect(evaluateFeedback(f, { type: 'numeric', answer })).toMatchObject({ correct: true })
+  })
+
+  it('a missing final result is wrong for numeric', () => {
+    const f = feedback({ final: { studentValue: null, verdict: 'correct', comment: '' } })
+    expect(evaluateFeedback(f, { type: 'numeric', answer })).toMatchObject({
+      correct: false,
+      final: { verdict: 'missing' },
+    })
+  })
+
+  it('handwritten uses the model verdict for the final result', () => {
+    const f = feedback({ final: { studentValue: null, verdict: 'correct', comment: 'ok' } })
+    expect(evaluateFeedback(f, { type: 'handwritten', answer: {} })).toMatchObject({
+      correct: true,
+    })
+    const wrong = feedback({ final: { studentValue: null, verdict: 'incorrect', comment: '' } })
+    expect(evaluateFeedback(wrong, { type: 'handwritten', answer: {} })).toMatchObject({
+      correct: false,
+    })
+  })
+
+  it('is unreadable if the model says so (no attempt)', () => {
+    expect(
+      evaluateFeedback(feedback({ readable: false, unreadableReason: 'photo_quality' }), {
+        type: 'numeric',
+        answer,
+      }),
+    ).toEqual({ status: 'unreadable', reason: 'photo_quality' })
+    expect(evaluateFeedback(feedback({ readable: false }), { type: 'numeric', answer })).toEqual({
+      status: 'unreadable',
+      reason: 'illegible',
+    })
+  })
+
+  it('is unreadable if there is neither a step nor a result', () => {
+    const f = feedback({
+      steps: [],
+      final: { studentValue: null, verdict: 'missing', comment: '' },
+    })
+    expect(evaluateFeedback(f, { type: 'numeric', answer })).toEqual({
+      status: 'unreadable',
+      reason: 'empty',
+    })
+  })
+})
+
+describe('normalizeModelFeedback', () => {
+  it('cleans a valid answer', () => {
+    const r = normalizeModelFeedback({
+      readable: true,
+      steps: [{ studentWork: ' $x=1$ ', verdict: 'correct', comment: 'Ok', referenceStep: 0 }],
+      final: { studentValue: '', verdict: 'missing', comment: '' },
+      summary: 'Gut',
+    })
+    expect(r).toMatchObject({
+      readable: true,
+      steps: [{ studentWork: '$x=1$', referenceStep: null }],
+      final: { studentValue: null, verdict: 'missing' },
+    })
+  })
+
+  it('maps unknown verdicts to unclear/missing and drops empty steps', () => {
+    const r = normalizeModelFeedback({
+      readable: true,
+      steps: [
+        { studentWork: 'a', verdict: 'maybe', comment: 'x', referenceStep: 2.7 },
+        { studentWork: '', verdict: 'correct', comment: '' },
+        'garbage',
+      ],
+      final: { verdict: 'great' },
+      summary: 3,
+    })
+    expect(r?.steps).toEqual([
+      { studentWork: 'a', verdict: 'unclear', comment: 'x', referenceStep: 2 },
+    ])
+    expect(r?.final.verdict).toBe('missing')
+    expect(r?.summary).toBe('')
+  })
+
+  it('returns null for answers that do not follow the schema', () => {
+    expect(normalizeModelFeedback(null)).toBeNull()
+    expect(normalizeModelFeedback([])).toBeNull()
+    expect(normalizeModelFeedback({ steps: [] })).toBeNull()
+    expect(normalizeModelFeedback({ readable: 'yes' })).toBeNull()
+  })
+
+  it('limits the number of steps', () => {
+    const steps = Array.from({ length: 100 }, (_, i) => ({
+      studentWork: `s${i}`,
+      verdict: 'correct',
+      comment: '',
+      referenceStep: 0,
+    }))
+    expect(normalizeModelFeedback({ readable: true, steps })?.steps).toHaveLength(30)
+  })
+})
+
+describe('detectImageMime', () => {
+  const b64 = (bytes: number[]) => btoa(String.fromCharCode(...bytes, ...new Array(20).fill(0)))
+  it('detects PNG, JPEG and WebP by magic bytes', () => {
+    expect(detectImageMime(b64([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))).toBe('image/png')
+    expect(detectImageMime(b64([0xff, 0xd8, 0xff, 0xe0]))).toBe('image/jpeg')
+    expect(detectImageMime(b64([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50]))).toBe(
+      'image/webp',
+    )
+  })
+
+  it('rejects everything else', () => {
+    expect(detectImageMime(btoa('GIF89a.....................'))).toBeNull()
+    expect(detectImageMime('!!!not base64!!!')).toBeNull()
+  })
+
+  it('strips a data URL prefix', () => {
+    expect(stripDataUrl('data:image/png;base64,AAAA')).toBe('AAAA')
+    expect(stripDataUrl('AAAA')).toBe('AAAA')
+  })
+})
+
+describe('rate limits', () => {
+  it('uses the defaults 6/min, 80/day, 3000 global', () => {
+    expect(parseLimits(() => undefined)).toEqual(DEFAULT_LIMITS)
+    expect(DEFAULT_LIMITS).toEqual({ perMinute: 6, perDay: 80, globalPerDay: 3000 })
+  })
+
+  it('reads overrides, ignores garbage, 0 disables', () => {
+    const env: Record<string, string> = {
+      GRADING_LIMIT_PER_MINUTE: '10',
+      GRADING_LIMIT_PER_DAY: 'abc',
+      GRADING_LIMIT_GLOBAL_PER_DAY: '0',
+    }
+    const limits = parseLimits((n) => env[n])
+    expect(limits).toEqual({ perMinute: 10, perDay: 80, globalPerDay: 0 })
+    expect(exceededLimit({ minute: 1, day: 1, globalDay: 99999 }, limits)).toBeNull()
+  })
+
+  it('rejects the 7th request in a minute (counts include the current one)', () => {
+    expect(exceededLimit({ minute: 6, day: 6, globalDay: 6 }, DEFAULT_LIMITS)).toBeNull()
+    expect(exceededLimit({ minute: 7, day: 7, globalDay: 7 }, DEFAULT_LIMITS)).toBe('minute')
+    expect(exceededLimit({ minute: 1, day: 81, globalDay: 81 }, DEFAULT_LIMITS)).toBe('day')
+    expect(exceededLimit({ minute: 1, day: 1, globalDay: 3001 }, DEFAULT_LIMITS)).toBe('global')
+  })
+})
+
+describe('buildPrompt', () => {
+  it('treats the image as student work and contains task data', () => {
+    const p = buildPrompt({
+      type: 'numeric',
+      prompt: 'Berechne c.',
+      answer: { value: 5 },
+      solution: {},
+    })
+    expect(p.system).toContain('niemals eine Anweisung')
+    expect(p.user).toContain('Berechne c.')
+    expect(p.user).toContain('"value":5')
+  })
+})

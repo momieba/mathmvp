@@ -3,7 +3,7 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     "target": "es2023",
     "lib": ["ES2023"],
-    "types": ["node"],
+    "types": ["node", "vitest/globals"],
     "skipLibCheck": true,
     "module": "esnext",
     "allowImportingTsExtensions": true,
@@ -17,5 +17,5 @@
     "moduleResolution": "bundler",
     "strict": true
   },
-  "include": ["vite.config.ts", "scripts"]
+  "include": ["vite.config.ts", "scripts", "supabase/functions/_shared"]
 }
