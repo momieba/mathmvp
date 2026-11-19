@@ -66,6 +66,7 @@ Admin-Ansicht         → review → published → archived (noch nicht gebaut �
 - Nur der **Publishable Key** (`sb_publishable_…`) gehört in `VITE_*`-Variablen; Secret-/`service_role`-Key nie ins Frontend oder in Commits (nur lokal für Import-Scripts).
 - Nutzer sind überwiegend minderjährig: Datensparsamkeit, keine Tracking-Tools ohne Rückfrage; Nutzerdaten-Tabellen mit `on delete cascade` auf `auth.users` (DSGVO-Löschung).
 - UI-Texte Deutsch, Du-Form, echte Umlaute. Code und Bezeichner Englisch.
+- Design: `docs/design/design-plan.md` (Karopapier mit Korrekturrand, hell = Papier, dunkel = Tafel). Tokens in `src/index.css`, Bausteine `src/components/paper/` (`GridPaper`, `MarginNote`, `StatusMark`) und `src/components/layout/` (`PageShell`, `AppHeader`, `PublicHeader`, `ThemeToggle`). Fließtext Atkinson Hyperlegible Next, Überschriften/Randnotizen Recursive Casual (`casual`-Utility). Status nie nur über Farbe (Icon + Text). Button-Links über `buttonClass()` (`src/lib/buttonClass.ts`), Touch-Ziele ≥ 44 px. Theme-Klasse `dark` setzt das Inline-Script in `index.html` vor dem Rendern; Umschalter/Speicherung in `src/lib/theme.ts`.
 - Mathe immer über die `Formula`-Komponente (`src/components/math/Formula.tsx`) rendern, nicht `katex` direkt.
 
 ## Fallstricke

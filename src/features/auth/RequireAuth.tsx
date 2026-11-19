@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, Outlet } from 'react-router'
+import { StateScreen } from '@/components/layout/StateScreen'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './AuthProvider'
 import { AUTH_ENABLED } from './config'
@@ -21,13 +22,13 @@ export function RequireAuth() {
 
   if (anonError)
     return (
-      <p role="alert" className="text-destructive mx-auto max-w-md p-8 text-center">
-        Die App konnte dich nicht automatisch anmelden ({anonError}). Bitte versuche es später noch
-        einmal.
-      </p>
+      <StateScreen kind="error" title="Du konntest nicht angemeldet werden.">
+        Die App hat dich nicht automatisch angemeldet ({anonError}). Lade die Seite später noch
+        einmal neu.
+      </StateScreen>
     )
   if (loading || (!AUTH_ENABLED && !session))
-    return <p className="text-muted-foreground p-8 text-center">Lädt …</p>
+    return <StateScreen kind="loading" title="Einen Moment …" />
   if (!session) return <Navigate to="/login" replace />
   return <Outlet />
 }

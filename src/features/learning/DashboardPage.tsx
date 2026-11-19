@@ -1,14 +1,15 @@
 import { Search, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { SiteFooter } from '@/components/layout/SiteFooter'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { AppHeader, ProfileLink } from '@/components/layout/AppHeader'
+import { PageShell } from '@/components/layout/PageShell'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { signOut } from '@/features/auth/api'
 import { AUTH_ENABLED } from '@/features/auth/config'
 import { schoolTypeLabels, stateLabels } from '@/features/curriculum/labels'
 import { useProfile } from '@/features/profile/api'
-import { cn } from '@/lib/utils'
+import { buttonClass } from '@/lib/buttonClass'
 import {
   useAddTopic,
   useMyTopics,
@@ -42,64 +43,72 @@ export function DashboardPage() {
   const progress = useProgress()
 
   return (
-    <div className="flex min-h-svh flex-col">
-      <header className="border-b">
-        <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-4 sm:px-6">
-          <span className="font-semibold">Mathe-Training</span>
-          <div className="flex gap-1">
-            <Link to="/profil" className={buttonVariants({ variant: 'ghost' })}>
-              Profil
-            </Link>
-            {AUTH_ENABLED && (
-              <Button variant="ghost" onClick={() => void signOut()}>
-                Abmelden
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6">
+    <PageShell
+      header={
+        <AppHeader
+          actions={
+            <>
+              <ProfileLink />
+              {AUTH_ENABLED && (
+                <Button variant="ghost" onClick={() => void signOut()}>
+                  Abmelden
+                </Button>
+              )}
+            </>
+          }
+        />
+      }
+    >
+      <div className="flex flex-col gap-10">
         <section>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Hallo{profile?.display_name ? `, ${profile.display_name}` : ''}!
+          <h1 className="text-title">
+            Hallo{profile?.display_name ? ` ${profile.display_name}` : ''}
           </h1>
           {profile?.state && profile.school_type && (
-            <p className="text-muted-foreground mt-1 text-sm">
-              {schoolTypeLabels[profile.school_type]} · Klasse {profile.grade} ·{' '}
-              {stateLabels[profile.state]}
+            <p className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-4">
+              <span>
+                Klasse {profile.grade}, {schoolTypeLabels[profile.school_type]},{' '}
+                {stateLabels[profile.state]}
+              </span>
+              <Link
+                to="/profil"
+                className="text-primary inline-flex min-h-11 items-center underline underline-offset-4"
+              >
+                Ändern
+              </Link>
             </p>
           )}
         </section>
 
         <TopicSearch addedIds={new Set(myTopics.data?.map((t) => t.id))} />
 
+        {/* Platz für „Weiter, wo du warst“ (Lernpfad-Einstieg, Etappe 5) – steht über „Meine Themen“. */}
         <section aria-labelledby="my-topics">
-          <h2 id="my-topics" className="mb-4 text-lg font-semibold">
+          <h2 id="my-topics" className="text-h2 mb-4">
             Meine Themen
           </h2>
           {myTopics.isPending ? (
-            <p className="text-muted-foreground">Lädt …</p>
+            <p role="status" className="text-muted-foreground">
+              Deine Themen werden geladen …
+            </p>
           ) : myTopics.error ? (
             <p role="alert" className="text-destructive">
-              Deine Themen konnten nicht geladen werden.
+              Deine Themen konnten nicht geladen werden. Lade die Seite neu.
             </p>
           ) : myTopics.data.length === 0 ? (
-            <p className="text-muted-foreground rounded-xl border border-dashed p-6 text-center">
-              Noch keine Themen. Such oben nach einem Thema, das du üben möchtest – zum Beispiel
-              „Pythagoras“.
+            <p className="text-prose border-y py-6">
+              Noch keine Themen. Such dein erstes Thema, z. B. Brüche.
             </p>
           ) : (
-            <ul className="grid gap-4">
+            <ul className="divide-y border-y">
               {myTopics.data.map((topic) => (
-                <TopicCard key={topic.id} topic={topic} progress={progress.data} />
+                <TopicBlock key={topic.id} topic={topic} progress={progress.data} />
               ))}
             </ul>
           )}
         </section>
-      </main>
-      <SiteFooter />
-    </div>
+      </div>
+    </PageShell>
   )
 }
 
@@ -111,41 +120,38 @@ function TopicSearch({ addedIds }: { addedIds: Set<string> }) {
   const showResults = debounced.trim().length >= 2
 
   return (
-    <section aria-labelledby="search-heading" className="bg-card rounded-xl border p-4 sm:p-6">
-      <h2 id="search-heading" className="mb-3 font-semibold">
-        Was möchtest du lernen?
-      </h2>
+    <section aria-label="Thema suchen">
       <div className="relative">
         <Search
           aria-hidden="true"
-          className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2"
+          className="text-muted-foreground absolute top-1/2 left-4 size-5 -translate-y-1/2"
         />
         <Input
           type="search"
           aria-label="Thema suchen"
-          placeholder="Thema suchen, z. B. Pythagoras, Brüche, lineare Funktionen …"
-          className="h-10 pl-9"
+          placeholder="Thema suchen, z. B. „Pythagoras“"
+          className="text-prose h-14 pl-12"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
       </div>
-      {showResults && (
-        <div className="mt-3" aria-live="polite">
-          {search.isPending ? (
-            <p className="text-muted-foreground text-sm">Suche …</p>
+      <div className="mt-3 empty:hidden" aria-live="polite">
+        {showResults &&
+          (search.isPending ? (
+            <p className="text-muted-foreground">Suche …</p>
           ) : search.error ? (
-            <p role="alert" className="text-destructive text-sm">
-              Die Suche hat nicht geklappt.
+            <p role="alert" className="text-destructive">
+              Die Suche hat nicht geklappt. Versuch es noch einmal.
             </p>
           ) : search.data && search.data.length > 0 ? (
-            <ul className="divide-y">
+            <ul className="divide-y border-y">
               {search.data.map((hit) => {
                 const added = addedIds.has(hit.topic_id)
                 return (
                   <li key={hit.topic_id} className="flex items-center justify-between gap-4 py-3">
                     <div className="min-w-0">
                       <p className="font-medium">{hit.title}</p>
-                      <p className="text-muted-foreground truncate text-sm">
+                      <p className="text-muted-foreground text-fine">
                         {hit.matched !== hit.title ? `Enthält: ${hit.matched}` : hit.description}
                       </p>
                     </div>
@@ -161,17 +167,17 @@ function TopicSearch({ addedIds }: { addedIds: Set<string> }) {
               })}
             </ul>
           ) : (
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground">
               Kein Thema gefunden. Versuch es mit einem anderen Begriff.
             </p>
-          )}
-        </div>
-      )}
+          ))}
+      </div>
     </section>
   )
 }
 
-function TopicCard({
+/** One topic as a table-of-contents entry: title, overall progress, then its sections as ruled rows. */
+function TopicBlock({
   topic,
   progress,
 }: {
@@ -187,42 +193,49 @@ function TopicCard({
   const attempts = scores.reduce((sum, p) => sum + (p?.attemptCount ?? 0), 0)
 
   return (
-    <li className="bg-card rounded-xl border p-4 sm:p-6">
+    <li className="py-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="text-lg font-semibold">{topic.title}</h3>
-          <p className="text-muted-foreground text-sm">{topic.description}</p>
+          <h3 className="text-h3">{topic.title}</h3>
+          <p className="text-muted-foreground text-fine measure mt-1">{topic.description}</p>
         </div>
         <Button
           variant="ghost"
           size="icon"
+          className="-mt-2 -mr-2"
           aria-label={`${topic.title} aus meinen Themen entfernen`}
           onClick={() => remove.mutate(topic.id)}
         >
-          <X className="size-4" />
+          <X aria-hidden="true" className="size-5" />
         </Button>
       </div>
       <ScoreBar score={total} attemptCount={attempts} className="mt-4" />
-      <ol className="mt-4 divide-y border-t">
+      <ol className="mt-4">
         {topic.subtopics.map((s, i) => {
           const p = scores[i]
           return (
             <li
               key={s.id}
-              className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:gap-4"
+              className="flex flex-col gap-1 border-t py-3 sm:flex-row sm:items-center sm:gap-3"
             >
-              <div className="min-w-0 sm:w-1/2">
-                <p className="truncate text-sm font-medium">{s.title}</p>
-                <p className="text-muted-foreground text-xs">{stageLabels[s.stage]}</p>
+              <div className="flex min-w-0 flex-1 items-baseline gap-2">
+                <span className="font-medium">{s.title}</span>
+                <span className="text-muted-foreground text-fine shrink-0">
+                  {stageLabels[s.stage]}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="mb-1 hidden min-w-4 flex-1 self-end border-b-2 border-dotted sm:block"
+                />
               </div>
               <ScoreBar
                 score={p?.score ?? 0}
                 attemptCount={p?.attemptCount ?? 0}
-                className="flex-1"
+                className="sm:w-72"
               />
               <Link
                 to={`/app/ueben/${s.slug}`}
-                className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'shrink-0')}
+                className={buttonClass({ variant: 'outline' }, 'shrink-0')}
               >
                 Üben
               </Link>

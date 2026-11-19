@@ -16,6 +16,7 @@ export function GridPaper({
   as: Tag = 'div',
   className,
   contentClassName,
+  marginClassName,
   ...rest
 }: Omit<HTMLAttributes<HTMLElement>, 'children'> & {
   children: ReactNode
@@ -25,6 +26,7 @@ export function GridPaper({
   raised?: boolean
   as?: 'div' | 'section' | 'figure' | 'article'
   contentClassName?: string
+  marginClassName?: string
 }) {
   return (
     <Tag
@@ -38,7 +40,9 @@ export function GridPaper({
     >
       <div className={cn('min-w-0 px-4 py-3', contentClassName)}>{children}</div>
       {margin !== undefined && (
-        <div className="border-t-2 px-4 py-3 md:border-t-0 md:border-l-2">{margin}</div>
+        <div className={cn('border-t-2 px-4 py-3 md:border-t-0 md:border-l-2', marginClassName)}>
+          {margin}
+        </div>
       )}
     </Tag>
   )

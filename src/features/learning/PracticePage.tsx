@@ -1,11 +1,15 @@
-import { CheckCircle2, Lightbulb, XCircle } from 'lucide-react'
+import { Lightbulb } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router'
-import { SiteFooter } from '@/components/layout/SiteFooter'
+import { AppHeader } from '@/components/layout/AppHeader'
+import { PageShell } from '@/components/layout/PageShell'
 import { DiagramView } from '@/components/math/DiagramView'
 import { RichText } from '@/components/math/RichText'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { GridPaper } from '@/components/paper/GridPaper'
+import { MarginNote } from '@/components/paper/MarginNote'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { buttonClass } from '@/lib/buttonClass'
 import { cn } from '@/lib/utils'
 import {
   fetchHint,
@@ -57,42 +61,48 @@ export function PracticePage() {
 
   const topic = subtopic.data?.topics
   return (
-    <div className="flex min-h-svh flex-col">
-      <header className="border-b">
-        <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Link to="/app" className="text-muted-foreground text-sm hover:underline">
-            ← Dashboard
+    <PageShell
+      width="reading"
+      header={
+        <AppHeader width="reading" back={{ to: '/app', label: topic?.title ?? 'Meine Themen' }} />
+      }
+    >
+      {subtopic.isPending ? (
+        <p role="status" className="text-muted-foreground">
+          Die Aufgaben werden geladen …
+        </p>
+      ) : !subtopic.data ? (
+        <div role="alert">
+          <h1 className="text-h2">Diesen Abschnitt gibt es nicht.</h1>
+          <p className="text-muted-foreground mt-2">
+            Geh zurück zu deinen Themen und wähl einen Abschnitt aus.
+          </p>
+          <Link to="/app" className={buttonClass({ variant: 'outline' }, 'mt-4')}>
+            Zu meinen Themen
           </Link>
-          {topic && <span className="text-muted-foreground truncate text-sm">{topic.title}</span>}
         </div>
-      </header>
+      ) : (
+        <div className="flex flex-col gap-6">
+          <section>
+            <h1 className="text-title">{subtopic.data.title}</h1>
+            <ScoreBar score={score} attemptCount={mine?.attemptCount ?? 0} className="mt-3" />
+          </section>
 
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
-        {subtopic.isPending ? (
-          <p className="text-muted-foreground">Lädt …</p>
-        ) : !subtopic.data ? (
-          <p role="alert">Dieses Subthema gibt es nicht.</p>
-        ) : (
-          <>
-            <section>
-              <h1 className="text-2xl font-bold tracking-tight">{subtopic.data.title}</h1>
-              <ScoreBar score={score} attemptCount={mine?.attemptCount ?? 0} className="mt-3" />
-            </section>
-
-            {exercises.isPending ? (
-              <p className="text-muted-foreground">Aufgaben werden geladen …</p>
-            ) : !current ? (
-              <p className="text-muted-foreground rounded-xl border border-dashed p-6 text-center">
-                Für dieses Subthema gibt es noch keine Aufgaben. Schau bald wieder vorbei!
-              </p>
-            ) : (
-              <ExerciseCard key={`${current.id}-${round}`} exercise={current} onNext={next} />
-            )}
-          </>
-        )}
-      </main>
-      <SiteFooter />
-    </div>
+          {exercises.isPending ? (
+            <p role="status" className="text-muted-foreground">
+              Die Aufgaben werden geladen …
+            </p>
+          ) : !current ? (
+            <p className="text-prose border-y py-6">
+              Für diesen Abschnitt gibt es noch keine Aufgaben. Üb in der Zwischenzeit ein anderes
+              Thema.
+            </p>
+          ) : (
+            <ExerciseCard key={`${current.id}-${round}`} exercise={current} onNext={next} />
+          )}
+        </div>
+      )}
+    </PageShell>
   )
 }
 
@@ -123,92 +133,113 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
   const canSubmit = exercise.type === 'numeric' ? value.trim() !== '' : selected.length > 0
 
   return (
-    <form onSubmit={onSubmit} className="bg-card flex flex-col gap-5 rounded-xl border p-5 sm:p-6">
-      <div className="text-muted-foreground flex items-center justify-between text-xs">
-        <span className="bg-secondary rounded-full px-2.5 py-1 font-medium">
-          {difficultyLabels[exercise.difficulty]}
-        </span>
-      </div>
-
-      <div className="leading-relaxed">
-        <RichText text={exercise.prompt} />
-      </div>
-      {exercise.diagram && <DiagramView diagram={exercise.diagram} />}
-
-      {exercise.type === 'numeric' ? (
-        <div className="flex items-center gap-2">
-          <Input
-            aria-label="Deine Antwort"
-            inputMode="decimal"
-            autoComplete="off"
-            placeholder="Deine Antwort"
-            className="h-10 max-w-48"
-            value={value}
-            disabled={!!result}
-            onChange={(e) => setValue(e.target.value)}
-          />
-          {exercise.presentation.unit && (
-            <span className="text-muted-foreground">{exercise.presentation.unit}</span>
-          )}
+    <form onSubmit={onSubmit} className="flex flex-col gap-6">
+      {/* Aufgabe */}
+      <section aria-labelledby="task-heading">
+        <h2 id="task-heading" className="text-fine text-muted-foreground font-sans font-normal">
+          Aufgabe, {difficultyLabels[exercise.difficulty]}
+        </h2>
+        <div className="text-prose measure mt-1">
+          <RichText text={exercise.prompt} />
         </div>
-      ) : (
-        <fieldset className="grid gap-2 sm:grid-cols-2">
-          <legend className="sr-only">Antwortmöglichkeiten</legend>
-          {(exercise.presentation.options ?? []).map((option, i) => {
-            const isSelected = selected.includes(i)
-            const isCorrect = result?.answer.correct?.includes(i)
-            return (
-              <label
-                key={i}
-                className={cn(
-                  'flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors',
-                  isSelected && !result && 'border-primary bg-primary/5',
-                  result && isCorrect && 'border-emerald-600 bg-emerald-600/10',
-                  result && isSelected && !isCorrect && 'border-destructive bg-destructive/10',
-                )}
-              >
-                <input
-                  type={multi ? 'checkbox' : 'radio'}
-                  name="option"
-                  className="accent-primary"
-                  checked={isSelected}
-                  disabled={!!result}
-                  onChange={() =>
-                    setSelected((s) =>
-                      multi ? (isSelected ? s.filter((x) => x !== i) : [...s, i]) : [i],
-                    )
-                  }
-                />
-                <RichText text={option} />
-              </label>
-            )
-          })}
-        </fieldset>
-      )}
+        {exercise.diagram && <DiagramView diagram={exercise.diagram} />}
+      </section>
 
+      {/* Antwortbereich: das Blatt mit Rand. Hier zieht in Etappe 6 die Zeichenfläche ein. */}
+      <GridPaper
+        as="section"
+        raised
+        aria-label="Antwortbereich"
+        margin={<div role="status">{result && <ResultNote result={result} />}</div>}
+        marginClassName="max-md:has-[[role=status]:empty]:hidden"
+        contentClassName="py-4"
+      >
+        {exercise.type === 'numeric' ? (
+          <div className="flex items-center gap-3">
+            <Input
+              aria-label="Deine Antwort"
+              inputMode="decimal"
+              autoComplete="off"
+              placeholder="Deine Antwort"
+              className="bg-background disabled:bg-background dark:bg-background dark:disabled:bg-background max-w-48 disabled:opacity-100"
+              value={value}
+              disabled={!!result}
+              onChange={(e) => setValue(e.target.value)}
+            />
+            {exercise.presentation.unit && (
+              <span className="text-muted-foreground">{exercise.presentation.unit}</span>
+            )}
+          </div>
+        ) : (
+          <fieldset className="grid gap-2 sm:grid-cols-2">
+            <legend className="sr-only">Antwortmöglichkeiten</legend>
+            {(exercise.presentation.options ?? []).map((option, i) => {
+              const isSelected = selected.includes(i)
+              const isCorrect = result?.answer.correct?.includes(i)
+              return (
+                <label
+                  key={i}
+                  className={cn(
+                    'bg-background flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border-2 p-3',
+                    isSelected && !result && 'border-primary',
+                    result && isCorrect && 'border-correct',
+                    result && isSelected && !isCorrect && 'border-wrong',
+                  )}
+                >
+                  <input
+                    type={multi ? 'checkbox' : 'radio'}
+                    name="option"
+                    className="accent-primary size-5 shrink-0"
+                    checked={isSelected}
+                    disabled={!!result}
+                    onChange={() =>
+                      setSelected((s) =>
+                        multi ? (isSelected ? s.filter((x) => x !== i) : [...s, i]) : [i],
+                      )
+                    }
+                  />
+                  <RichText text={option} />
+                  {result && isCorrect && (
+                    <span className="text-correct text-fine ml-auto">richtig</span>
+                  )}
+                  {result && isSelected && !isCorrect && (
+                    <span className="text-wrong text-fine ml-auto">deine Wahl</span>
+                  )}
+                </label>
+              )
+            })}
+          </fieldset>
+        )}
+      </GridPaper>
+
+      {/* Hinweise */}
       {hints.length > 0 && !result && (
-        <ul className="space-y-2">
+        <ul className="space-y-2" aria-label="Hinweise">
           {hints.map((h, i) => (
-            <li key={i} className="flex gap-2 rounded-lg bg-amber-500/10 p-3 text-sm">
-              <Lightbulb aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-amber-600" />
-              <RichText text={h} />
+            <li key={i} className="bg-marker text-marker-foreground flex gap-3 rounded-lg p-3">
+              <Lightbulb aria-hidden="true" className="mt-1 size-5 shrink-0" />
+              <span>
+                <span className="font-semibold">Hinweis {i + 1}: </span>
+                <RichText text={h} />
+              </span>
             </li>
           ))}
         </ul>
       )}
 
       {submit.error && (
-        <p role="alert" className="text-destructive text-sm">
-          Das hat nicht geklappt: {submit.error.message}
+        <p role="alert" className="text-destructive">
+          Das hat nicht geklappt: {submit.error.message}. Versuch es noch einmal.
         </p>
       )}
 
-      {result && <ResultPanel result={result} />}
+      {/* Musterlösung: zweites Blatt */}
+      {result && <Solution result={result} />}
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Button
           type="submit"
-          className="h-10 px-5"
+          className="px-6"
           disabled={(!result && !canSubmit) || submit.isPending}
         >
           {result ? 'Nächste Aufgabe' : 'Prüfen'}
@@ -217,16 +248,19 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
           <Button
             type="button"
             variant="outline"
-            className="h-10"
             disabled={noMoreHints}
             onClick={() => void nextHint()}
           >
-            {noMoreHints ? 'Keine weiteren Hinweise' : 'Hinweis'}
+            {noMoreHints
+              ? 'Keine weiteren Hinweise'
+              : hints.length > 0
+                ? 'Noch ein Hinweis'
+                : 'Hinweis'}
           </Button>
         )}
         {result && (
-          <Link to="/app" className={cn(buttonVariants({ variant: 'ghost' }), 'h-10')}>
-            Zurück zum Dashboard
+          <Link to="/app" className={buttonClass({ variant: 'ghost' })}>
+            Zurück zu meinen Themen
           </Link>
         )}
       </div>
@@ -238,61 +272,56 @@ function formatNumber(n: number) {
   return String(n).replace('.', ',')
 }
 
-function ResultPanel({ result }: { result: SubmitResult }) {
+/** Correction in the margin of the answer sheet (later: one note per handwritten step). */
+function ResultNote({ result }: { result: SubmitResult }) {
   const { answer } = result
   const correctText =
     answer.value !== undefined
       ? `${formatNumber(answer.value)}${answer.unit ? ` ${answer.unit}` : ''}`
       : answer.correct?.map((i) => answer.options?.[i]).join(', ')
 
-  return (
-    <div
-      role="status"
-      className={cn(
-        'rounded-lg border p-4',
-        result.correct
-          ? 'border-emerald-600/40 bg-emerald-600/5'
-          : 'border-destructive/40 bg-destructive/5',
+  return result.correct ? (
+    <MarginNote status="correct" animate>
+      Stimmt!
+    </MarginNote>
+  ) : (
+    <MarginNote status="wrong" animate>
+      Nicht ganz.
+      {correctText && (
+        <>
+          {' '}
+          Richtig ist: <RichText text={correctText} />
+        </>
       )}
-    >
-      <p className="flex items-center gap-2 font-semibold">
-        {result.correct ? (
-          <>
-            <CheckCircle2 aria-hidden="true" className="size-5 text-emerald-600" /> Richtig!
-          </>
-        ) : (
-          <>
-            <XCircle aria-hidden="true" className="text-destructive size-5" /> Leider falsch.
-            {correctText && (
-              <span className="font-normal">
-                Richtig ist: <RichText text={correctText} />
-              </span>
-            )}
-          </>
-        )}
+    </MarginNote>
+  )
+}
+
+function Solution({ result }: { result: SubmitResult }) {
+  return (
+    <GridPaper as="section" aria-labelledby="solution-heading" contentClassName="py-4">
+      <h2 id="solution-heading" className="text-h3">
+        Musterlösung
+      </h2>
+      <ol className="mt-3 space-y-4">
+        {result.solution.steps.map((step, i) => (
+          <li key={i} className="flex gap-3">
+            <span aria-hidden="true" className="casual text-primary w-6 shrink-0 text-lg">
+              {i + 1}
+            </span>
+            <div className="min-w-0">
+              <RichText text={step.text} />
+              {step.diagram && <DiagramView diagram={step.diagram} />}
+            </div>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-4 border-t-2 pt-3">
+        <span className="font-semibold">Ergebnis: </span>
+        <mark className="bg-marker text-marker-foreground rounded-[2px] px-1">
+          <RichText text={result.solution.result} />
+        </mark>
       </p>
-      <div className="mt-4">
-        <p className="text-sm font-medium">Lösungsweg</p>
-        <ol className="mt-2 space-y-2 text-sm">
-          {result.solution.steps.map((step, i) => (
-            <li key={i} className="flex gap-3">
-              <span
-                aria-hidden="true"
-                className="bg-primary text-primary-foreground grid size-6 shrink-0 place-items-center rounded-full text-xs font-semibold"
-              >
-                {i + 1}
-              </span>
-              <div>
-                <RichText text={step.text} />
-                {step.diagram && <DiagramView diagram={step.diagram} />}
-              </div>
-            </li>
-          ))}
-        </ol>
-        <p className="mt-3 text-sm">
-          <span className="font-medium">Ergebnis:</span> <RichText text={result.solution.result} />
-        </p>
-      </div>
-    </div>
+    </GridPaper>
   )
 }

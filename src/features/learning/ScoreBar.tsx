@@ -31,7 +31,7 @@ export function ScoreBar({
         />
       </div>
       {showLabel && (
-        <span className="text-fine flex shrink-0 items-baseline gap-2 whitespace-nowrap tabular-nums">
+        <span className="text-fine flex min-w-36 shrink-0 items-baseline justify-end gap-2 whitespace-nowrap tabular-nums">
           {level !== 'neu' && <strong className="font-semibold">{score} Punkte</strong>}
           <span className="text-muted-foreground">{masteryLabels[level]}</span>
         </span>

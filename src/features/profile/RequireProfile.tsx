@@ -1,16 +1,17 @@
 import { Navigate, Outlet } from 'react-router'
+import { StateScreen } from '@/components/layout/StateScreen'
 import { useProfile } from './api'
 import { needsProfileSetup } from './needsProfileSetup'
 
 /** Guards app routes: redirects to /profil until onboarding and privacy consent are complete. */
 export function RequireProfile() {
   const { data: profile, isPending, error } = useProfile()
-  if (isPending) return <p className="text-muted-foreground p-8 text-center">Lädt …</p>
+  if (isPending) return <StateScreen kind="loading" title="Dein Profil wird geladen …" />
   if (error)
     return (
-      <p role="alert" className="text-destructive p-8 text-center">
-        Dein Profil konnte nicht geladen werden. Bitte lade die Seite neu.
-      </p>
+      <StateScreen kind="error" title="Dein Profil konnte nicht geladen werden.">
+        Lade die Seite neu. Wenn das nicht hilft, versuch es später noch einmal.
+      </StateScreen>
     )
   if (needsProfileSetup(profile)) return <Navigate to="/profil" replace />
   return <Outlet />

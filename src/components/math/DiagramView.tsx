@@ -2,7 +2,10 @@ import type { Diagram } from '@/features/exercises/schema'
 
 type Point = [number, number]
 
-/** Renders diagram data (see diagramSchema) as SVG. Function plots follow later. */
+/**
+ * Renders diagram data (see diagramSchema) as SVG. Function plots follow later.
+ * Solution diagrams sit on the squared paper of the worked-solution sheet, so they share its grid.
+ */
 export function DiagramView({ diagram }: { diagram: Diagram }) {
   if (diagram.kind === 'table') return <TableView diagram={diagram} />
   if (diagram.kind === 'geometry') return <GeometryView diagram={diagram} />
@@ -11,7 +14,7 @@ export function DiagramView({ diagram }: { diagram: Diagram }) {
 
 function TableView({ diagram }: { diagram: Extract<Diagram, { kind: 'table' }> }) {
   return (
-    <table className="my-2 border-collapse text-sm">
+    <table className="bg-background my-1 border-collapse">
       <thead>
         <tr>
           {diagram.header.map((h, i) => (
@@ -60,7 +63,7 @@ function GeometryView({ diagram }: { diagram: Extract<Diagram, { kind: 'geometry
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
-      className="text-foreground my-3 max-h-64 w-full max-w-sm"
+      className="text-foreground max-h-64 w-full max-w-sm"
       role="img"
       aria-label="Skizze zur Aufgabe"
     >
@@ -122,6 +125,12 @@ function GeometryView({ diagram }: { diagram: Extract<Diagram, { kind: 'geometry
             dy={font * 1.1}
             fontSize={font * 0.9}
             className="fill-muted-foreground"
+            style={{
+              paintOrder: 'stroke',
+              stroke: 'var(--paper)',
+              strokeWidth: font * 0.3,
+              strokeLinejoin: 'round',
+            }}
           >
             {name}
           </text>
@@ -138,6 +147,12 @@ function GeometryView({ diagram }: { diagram: Extract<Diagram, { kind: 'geometry
             textAnchor="middle"
             dominantBaseline="middle"
             className="fill-current font-medium"
+            style={{
+              paintOrder: 'stroke',
+              stroke: 'var(--paper)',
+              strokeWidth: font * 0.3,
+              strokeLinejoin: 'round',
+            }}
           >
             {l.text}
           </text>
