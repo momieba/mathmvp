@@ -172,7 +172,7 @@ export function useSubtopic(slug: string) {
   })
 }
 
-/** Published numeric / multiple-choice exercises of a subtopic (handwritten comes with stage C). */
+/** Published exercises of a subtopic that the practice page can show. */
 export function usePracticeExercises(subtopicId: string | undefined) {
   return useQuery({
     queryKey: keys.exercises(subtopicId ?? ''),
@@ -183,7 +183,7 @@ export function usePracticeExercises(subtopicId: string | undefined) {
         .select('id, type, prompt, diagram, presentation, exercise_placements(difficulty)')
         .eq('subtopic_id', subtopicId!)
         .eq('status', 'published')
-        .in('type', ['numeric', 'multiple_choice'])
+        .in('type', ['numeric', 'multiple_choice', 'handwritten'])
       if (error) throw error
       return data.map((e) => ({
         id: e.id,
@@ -210,6 +210,33 @@ export function useSubmitAnswer() {
       })
       if (error) throw error
       return data as unknown as SubmitResult
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.progress }),
+  })
+}
+
+export type HandwritingResult = SubmitResult & {
+  readable: boolean
+  summary: string
+  errors: { step: string; explanation: string }[]
+}
+
+/** Sends the drawn solution to the grade-handwriting Edge Function (Gemini). */
+export function useGradeHandwriting() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (args: { exerciseId: string; image: string }) => {
+      const { data, error } = await supabase.functions.invoke<HandwritingResult>(
+        'grade-handwriting',
+        { body: { exerciseId: args.exerciseId, image: args.image } },
+      )
+      if (error) {
+        // Edge Function errors carry a JSON body with a user-facing message.
+        const ctx = (error as { context?: Response }).context
+        const message = ctx ? ((await ctx.json().catch(() => null)) as { error?: string } | null)?.error : null
+        throw new Error(message ?? error.message)
+      }
+      return data!
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.progress }),
   })
