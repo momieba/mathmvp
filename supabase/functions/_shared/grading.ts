@@ -193,6 +193,9 @@ export function parseStudentNumber(text: string | null | undefined): number | nu
   let t = text
     .replace(/[−–—]/g, '-')
     .replace(/\$|\\,|\\;|\\!|\\ /g, '')
+    .replace(/\\approx/g, '≈')
+    // indices/exponents after a letter or unit ("x_1", "x_{12}", "cm^2", "\text{cm}^{2}") are no values
+    .replace(/(?<=[A-Za-z}])[_^](?:\{[^}]*\}|\w)/g, '')
     .replace(/\\(?:d|t)?frac\s*\{\s*(-?[\d.,]+)\s*\}\s*\{\s*(-?[\d.,]+)\s*\}/g, '$1/$2')
     .replace(/\\cdot|\\times|·/g, '*')
   // "x = 5 cm", "A ≈ 12,6": only what stands right of the last "=" / "≈"
@@ -204,6 +207,8 @@ export function parseStudentNumber(text: string | null | undefined): number | nu
   const fraction = new RegExp(String.raw`^\s*(${NUM})\s*/\s*(${NUM})`)
   const fm = fraction.exec(t)
   if (fm) {
+    // "1/2 + 3/4": more than a single fraction is no unambiguous result
+    if (/\d/.test(t.slice(fm[0].length))) return null
     const a = toNumber(fm[1]!)
     const b = toNumber(fm[2]!)
     if (a === null || b === null || b === 0) return null
@@ -219,6 +224,8 @@ function toNumber(s: string): number | null {
   let x = s.replace(/\s/g, '')
   const lastComma = x.lastIndexOf(',')
   const lastDot = x.lastIndexOf('.')
+  // Only dots: "1.250" is 1250 or 1,25 – ambiguous (the model verdict decides); "0.125" is clear.
+  if (lastComma < 0 && /^-?[1-9]\d{0,2}(\.\d{3})+$/.test(x)) return null
   if (lastComma >= 0 && lastDot >= 0) {
     // both present: the later one is the decimal separator, the other groups thousands
     x = lastComma > lastDot ? x.replace(/\./g, '').replace(',', '.') : x.replace(/,/g, '')
@@ -262,11 +269,12 @@ export function evaluateFeedback(
   let finalVerdict: FinalVerdict = feedback.final.verdict
   let comment = feedback.final.comment
   let summary = feedback.summary
-  const modelSaysCorrect = finalVerdict === 'correct'
+  const modelVerdict = feedback.final.verdict
 
   if (ctx.type === 'numeric') {
     if (feedback.final.studentValue === null) {
       finalVerdict = 'missing'
+      if (modelVerdict !== 'missing') comment = 'Ich finde kein Endergebnis auf deinem Blatt.'
     } else {
       const check = checkNumericValue(
         feedback.final.studentValue,
@@ -274,7 +282,7 @@ export function evaluateFeedback(
       )
       if (check !== null) {
         finalVerdict = check ? 'correct' : 'incorrect'
-        if (check !== modelSaysCorrect) {
+        if (finalVerdict !== modelVerdict) {
           comment = check
             ? 'Dein Endergebnis stimmt.'
             : 'Dein Endergebnis stimmt nicht mit der Musterlösung überein.'

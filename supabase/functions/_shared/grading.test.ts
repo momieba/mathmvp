@@ -48,6 +48,31 @@ describe('parseStudentNumber', () => {
   })
 })
 
+describe('parseStudentNumber edge cases', () => {
+  it.each([['1.250 €'], ['1.250'], ['12.500 m'], ['1/2 + 3/4'], ['1/2 und 3'], ['2 \\cdot 10^3']])(
+    'is ambiguous: %s',
+    (text) => {
+      expect(parseStudentNumber(text)).toBeNull()
+    },
+  )
+
+  it.each([
+    ['0.125', 0.125],
+    ['1.250,5', 1250.5],
+    ['1.250.000', null],
+    ['x_1 \\approx 3', 3],
+    ['x_{12} = 4,5', 4.5],
+    ['A = 50 cm^2', 50],
+    ['A = 50\\,\\text{cm}^{2}', 50],
+    ['\\frac{3}{4} m', 0.75],
+    ['3/4', 0.75],
+  ])('reads %s', (text, expected) => {
+    const parsed = parseStudentNumber(text)
+    if (expected === null) expect(parsed).toBeNull()
+    else expect(parsed).toBeCloseTo(expected, 9)
+  })
+})
+
 describe('checkNumericValue', () => {
   it('applies the tolerance like submit_answer', () => {
     expect(checkNumericValue('12,57', { value: 12.566, tolerance: 0.01 })).toBe(true)
@@ -97,6 +122,23 @@ describe('evaluateFeedback', () => {
     const f = feedback({ final: { studentValue: '4', verdict: 'incorrect', comment: 'Falsch.' } })
     const r = evaluateFeedback(f, { type: 'numeric', answer })
     expect(r).toMatchObject({ status: 'graded', correct: true, final: { verdict: 'correct' } })
+  })
+
+  it('replaces the model comment whenever the server verdict differs, also for "missing"', () => {
+    const f = feedback({
+      final: { studentValue: '8 m', verdict: 'missing', comment: 'Kein Ergebnis gefunden.' },
+    })
+    const r = evaluateFeedback(f, { type: 'numeric', answer })
+    expect(r).toMatchObject({ final: { verdict: 'incorrect' } })
+    if (r.status === 'graded') expect(r.final.comment).toContain('stimmt nicht')
+  })
+
+  it('keeps the model verdict for an ambiguous value like 1.250', () => {
+    const f = feedback({ final: { studentValue: '1.250', verdict: 'correct', comment: 'ok' } })
+    expect(evaluateFeedback(f, { type: 'numeric', answer: { value: 1250 } })).toMatchObject({
+      correct: true,
+      final: { comment: 'ok' },
+    })
   })
 
   it('falls back to the model verdict if the value cannot be parsed', () => {

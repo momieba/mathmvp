@@ -22,6 +22,7 @@ import { ProviderError, gradeWithModel } from '../_shared/provider.ts'
 
 const DEFAULT_MODEL = 'gemini-3.1-flash-lite'
 const MAX_IMAGE_BASE64 = 2_000_000 // base64 length limit
+const MAX_BODY_BYTES = 2_100_000
 const MINUTE = 60_000
 const DAY = 24 * 60 * MINUTE
 
@@ -72,6 +73,11 @@ async function recordGradedAttempt(
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'method not allowed' }, 405)
+
+  // Reject oversized bodies before reading them (base64 limit + JSON overhead).
+  if (Number(req.headers.get('content-length') ?? 0) > MAX_BODY_BYTES) {
+    return json({ error: 'Das Bild ist zu groß. Schreib etwas kleiner oder lösch Unnötiges.' }, 413)
+  }
 
   const provider = Deno.env.get('GRADING_PROVIDER') ?? 'gemini-developer'
   const apiKey = Deno.env.get('GEMINI_API_KEY')
@@ -138,14 +144,23 @@ Deno.serve(async (req) => {
       .select('id', { count: 'exact', head: true })
       .gte('created_at', new Date(now - ms).toISOString())
     if (ownOnly) q = q.eq('user_id', userId)
-    const { count } = await q
-    return count ?? 0
+    const { count, error } = await q
+    if (error) console.error('grading_requests count failed', error.message)
+    return error ? null : (count ?? 0)
   }
   const [minute, day, globalDay] = await Promise.all([
     countSince(MINUTE, true),
     countSince(DAY, true),
     countSince(DAY, false),
   ])
+  // The limit must never be silently off: if counting fails, refuse instead of grading.
+  if (minute === null || day === null || globalDay === null) {
+    await admin.from('grading_requests').delete().eq('id', reqRow.id)
+    return json(
+      { error: 'Die Korrektur ist gerade nicht verfügbar. Versuch es gleich noch einmal.' },
+      503,
+    )
+  }
   const exceeded = exceededLimit(
     { minute, day, globalDay },
     parseLimits((name) => Deno.env.get(name)),
