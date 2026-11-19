@@ -1,5 +1,6 @@
 import katex from 'katex'
 import { useMemo } from 'react'
+import { normalizePoints } from './normalizeTex'
 
 type FormulaProps = {
   /** LaTeX source, e.g. "\\frac{1}{2}" */
@@ -10,7 +11,12 @@ type FormulaProps = {
 
 export function Formula({ tex, block = false }: FormulaProps) {
   const html = useMemo(
-    () => katex.renderToString(tex, { displayMode: block, throwOnError: false, strict: 'warn' }),
+    () =>
+      katex.renderToString(normalizePoints(tex), {
+        displayMode: block,
+        throwOnError: false,
+        strict: 'warn',
+      }),
     [tex, block],
   )
   const Tag = block ? 'div' : 'span'

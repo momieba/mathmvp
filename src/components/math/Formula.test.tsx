@@ -16,4 +16,12 @@ describe('Formula', () => {
   it('does not throw on invalid LaTeX', () => {
     expect(() => render(<Formula tex="\frac{1" />)).not.toThrow()
   })
+
+  it('keeps point coordinates unbreakable: no relation or binary operator inside the point', () => {
+    for (const tex of [String.raw`B(-1 \mid -10)`, String.raw`B(-1\,|\,-10)`]) {
+      const { container } = render(<Formula tex={tex} />)
+      expect(container.querySelector('.mrel, .mbin')).not.toBeInTheDocument()
+      expect(container.querySelector('.mpunct')).toHaveTextContent('∣')
+    }
+  })
 })

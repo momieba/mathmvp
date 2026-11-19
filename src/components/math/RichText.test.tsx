@@ -47,4 +47,12 @@ describe('RichText', () => {
     expect(container.querySelector('strong')?.textContent).toBe('Achtung:')
     expect(container.querySelector('.katex')).toBeInTheDocument()
   })
+
+  it('renders points in running text without breakable relations', () => {
+    const { container } = render(
+      <RichText text={String.raw`durch $A(2 \mid -1)$ und $B(-1 \mid -10)$`} />,
+    )
+    expect(container.querySelectorAll('.katex')).toHaveLength(2)
+    expect(container.querySelector('.mrel, .mbin')).not.toBeInTheDocument()
+  })
 })
