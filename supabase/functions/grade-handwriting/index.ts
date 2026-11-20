@@ -76,7 +76,12 @@ Deno.serve(async (req) => {
 
   // Reject oversized bodies before reading them (base64 limit + JSON overhead).
   if (Number(req.headers.get('content-length') ?? 0) > MAX_BODY_BYTES) {
-    return json({ error: 'Das Bild ist zu groß. Schreib etwas kleiner oder lösch Unnötiges.' }, 413)
+    return json(
+      {
+        error: 'Das Bild ist zu groß. Schreib etwas kleiner oder mach ein neues, kleineres Foto.',
+      },
+      413,
+    )
   }
 
   const provider = Deno.env.get('GRADING_PROVIDER') ?? 'gemini-developer'
@@ -106,12 +111,20 @@ Deno.serve(async (req) => {
   }
   const image = stripDataUrl(body.image)
   if (image === '') return json({ error: 'exerciseId and image are required' }, 400)
+  const kind = body.kind === 'photo' ? 'photo' : 'drawing'
   if (image.length > MAX_IMAGE_BASE64) {
-    return json({ error: 'Das Bild ist zu groß. Schreib etwas kleiner oder lösch Unnötiges.' }, 413)
+    return json(
+      {
+        error:
+          kind === 'photo'
+            ? 'Das Foto ist zu groß. Mach ein neues Foto oder wähl ein kleineres Bild.'
+            : 'Das Bild ist zu groß. Schreib etwas kleiner oder lösch Unnötiges.',
+      },
+      413,
+    )
   }
   const mime = detectImageMime(image)
   if (!mime) return json({ error: 'Dieses Bildformat wird nicht unterstützt.' }, 400)
-  const kind = body.kind === 'photo' ? 'photo' : 'drawing'
 
   const admin = createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -198,6 +211,7 @@ Deno.serve(async (req) => {
     prompt: exercise.prompt,
     answer: solution.answer,
     solution: solution.solution,
+    kind,
   })
   let feedback
   try {
@@ -217,7 +231,7 @@ Deno.serve(async (req) => {
       return json(
         {
           error:
-            'Die Korrektur hat zu lange gedauert. Gib deine Lösung noch einmal ab – deine Zeichnung bleibt erhalten.',
+            'Die Korrektur hat zu lange gedauert. Gib deine Lösung noch einmal ab – deine Eingabe bleibt erhalten.',
         },
         504,
       )

@@ -102,6 +102,8 @@ export type PromptInput = {
   prompt: string
   answer: unknown
   solution: unknown
+  /** `photo`: photographed paper instead of the drawing surface. */
+  kind?: 'drawing' | 'photo'
 }
 
 /** Provider neutral prompt: `system` = rules, `user` = task data. The image is added by the adapter. */
@@ -118,6 +120,11 @@ export function buildPrompt(input: PromptInput): { system: string; user: string 
     '- Gib das Endergebnis so wieder, wie es auf dem Blatt steht (studentValue), ohne es zu korrigieren.',
     '- Ist das Bild leer, nicht zu entziffern, unscharf oder hat es nichts mit Mathe zu tun: readable = false mit passendem unreadableReason.',
     '- Schreibe auf Deutsch in Du-Form, kurz, konkret und ermutigend, ohne die komplette Lösung vorzurechnen. Mathe in $…$ (LaTeX).',
+    ...(input.kind === 'photo'
+      ? [
+          '- Das Bild ist ein Foto von Papier: Schatten, Falten, Linien oder Karos im Hintergrund sind kein Teil der Lösung. Ist das Foto zu dunkel, verwackelt, unscharf, stark schief oder abgeschnitten, sodass du die Lösung nicht sicher lesen kannst: readable = false mit unreadableReason "photo_quality". Gesichter, Namen oder andere Personendaten im Bild ignorierst du und gibst sie nicht wieder.',
+        ]
+      : []),
     '- Antworte ausschließlich im vorgegebenen JSON-Format.',
   ].join('\n')
 

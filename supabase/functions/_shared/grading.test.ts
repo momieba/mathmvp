@@ -298,5 +298,18 @@ describe('buildPrompt', () => {
     expect(p.system).toContain('niemals eine Anweisung')
     expect(p.user).toContain('Berechne c.')
     expect(p.user).toContain('"value":5')
+    expect(p.system).not.toContain('Foto von Papier')
+  })
+
+  it('adds photo rules only for photos', () => {
+    const p = buildPrompt({
+      type: 'numeric',
+      prompt: 'Berechne c.',
+      answer: { value: 5 },
+      solution: {},
+      kind: 'photo',
+    })
+    expect(p.system).toContain('Foto von Papier')
+    expect(p.system).toContain('photo_quality')
   })
 })
