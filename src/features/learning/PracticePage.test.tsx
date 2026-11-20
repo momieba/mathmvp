@@ -131,11 +131,10 @@ describe('PracticePage with handwriting', () => {
     fireEvent.click(screen.getByRole('button', { name: 'schreiben' }))
     expect(submit).toBeEnabled()
     fireEvent.click(submit)
-    expect(mutate).toHaveBeenCalledWith({
-      exerciseId: 'e1',
-      image: 'data:image/png;base64,AAAA',
-      kind: 'drawing',
-    })
+    expect(mutate).toHaveBeenCalledWith(
+      { exerciseId: 'e1', image: 'data:image/png;base64,AAAA', kind: 'drawing' },
+      expect.anything(),
+    )
   })
 
   it('shows progress while grading and locks the sheet', () => {
@@ -250,11 +249,10 @@ describe('PracticePage with handwriting', () => {
       const submit = screen.getByRole('button', { name: 'Lösung abgeben' })
       expect(submit).toBeEnabled()
       fireEvent.click(submit)
-      expect(mutate).toHaveBeenCalledWith({
-        exerciseId: 'e1',
-        image: 'data:image/jpeg;base64,BBBB',
-        kind: 'photo',
-      })
+      expect(mutate).toHaveBeenCalledWith(
+        { exerciseId: 'e1', image: 'data:image/jpeg;base64,BBBB', kind: 'photo' },
+        expect.anything(),
+      )
     })
 
     it('explains an undecodable image and does not enable submitting', async () => {
@@ -264,6 +262,40 @@ describe('PracticePage with handwriting', () => {
       pickFile('photo-gallery')
       expect(await screen.findByRole('alert')).toHaveTextContent(decodeErrorMessage)
       expect(screen.queryByAltText(/Vorschau/)).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Lösung abgeben' })).toBeDisabled()
+    })
+
+    it('blocks the old photo while a new one is prepared', async () => {
+      let resolve!: (v: string) => void
+      vi.mocked(prepareImage)
+        .mockResolvedValueOnce('data:image/jpeg;base64,OLD')
+        .mockReturnValueOnce(new Promise<string>((r) => (resolve = r)))
+      renderPage()
+      fireEvent.click(screen.getByRole('tab', { name: 'Foto' }))
+      pickFile('photo-camera')
+      await screen.findByAltText(/Vorschau/)
+      expect(screen.getByRole('button', { name: 'Lösung abgeben' })).toBeEnabled()
+      pickFile('photo-camera')
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Lösung abgeben' })).toBeDisabled(),
+      )
+      resolve('data:image/jpeg;base64,NEW')
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Lösung abgeben' })).toBeEnabled(),
+      )
+    })
+
+    it('drops the photo after an unreadable result so a new one is needed', async () => {
+      vi.mocked(prepareImage).mockResolvedValue('data:image/jpeg;base64,BBBB')
+      mutate.mockImplementationOnce((_args, opts) =>
+        opts?.onSuccess?.({ status: 'unreadable', reason: 'photo_quality' }),
+      )
+      renderPage()
+      fireEvent.click(screen.getByRole('tab', { name: 'Foto' }))
+      pickFile('photo-camera')
+      await screen.findByAltText(/Vorschau/)
+      fireEvent.click(screen.getByRole('button', { name: 'Lösung abgeben' }))
+      await waitFor(() => expect(screen.queryByAltText(/Vorschau/)).not.toBeInTheDocument())
       expect(screen.getByRole('button', { name: 'Lösung abgeben' })).toBeDisabled()
     })
 

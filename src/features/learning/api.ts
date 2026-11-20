@@ -254,6 +254,7 @@ const GRADING_TIMEOUT_MS = 60_000
 export function useGradeHandwriting() {
   const qc = useQueryClient()
   return useMutation({
+    gcTime: 0, // the request variables contain the image: do not keep them in the MutationCache
     mutationFn: async (args: { exerciseId: string; image: string; kind: 'drawing' | 'photo' }) => {
       const { data, error } = await supabase.functions.invoke<HandwritingResult>(
         'grade-handwriting',

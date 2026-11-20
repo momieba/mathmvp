@@ -28,6 +28,9 @@ export function PhotoInput({ disabled = false, onChange }: Props) {
     const file = e.target.files?.[0]
     e.target.value = '' // the same file can be chosen again
     if (!file) return
+    // the previous photo must not stay submittable while the new one is prepared
+    setPreview(null)
+    onChange?.(null)
     const id = ++pickId.current
     setBusy(true)
     setError(null)
@@ -60,7 +63,7 @@ export function PhotoInput({ disabled = false, onChange }: Props) {
   } as const
 
   return (
-    <div className="flex flex-col gap-4 p-4" aria-describedby={hintId}>
+    <div className="flex flex-col gap-4 p-4">
       <p id={hintId} className="text-fine text-muted-foreground">
         Nur deinen Rechenweg fotografieren – keine Gesichter oder Namen.
       </p>
@@ -78,6 +81,7 @@ export function PhotoInput({ disabled = false, onChange }: Props) {
           type="button"
           variant={preview ? 'outline' : 'default'}
           className="min-h-11"
+          aria-describedby={hintId}
           disabled={disabled || busy}
           onClick={() => cameraRef.current?.click()}
         >
@@ -88,6 +92,7 @@ export function PhotoInput({ disabled = false, onChange }: Props) {
           type="button"
           variant="outline"
           className="min-h-11"
+          aria-describedby={hintId}
           disabled={disabled || busy}
           onClick={() => galleryRef.current?.click()}
         >

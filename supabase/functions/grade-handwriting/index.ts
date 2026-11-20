@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
   if (Number(req.headers.get('content-length') ?? 0) > MAX_BODY_BYTES) {
     return json(
       {
-        error: 'Das Bild ist zu groß. Schreib etwas kleiner oder mach ein neues, kleineres Foto.',
+        error: 'Das Bild ist zu groß. Versuch es noch einmal mit weniger Inhalt.',
       },
       413,
     )

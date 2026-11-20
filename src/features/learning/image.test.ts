@@ -54,6 +54,73 @@ describe('scaledSize', () => {
   })
 })
 
+describe('prepareImage fallbacks and limits', () => {
+  it('retries createImageBitmap without options on TypeError (older Safari)', async () => {
+    const fn = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('options'))
+      .mockResolvedValueOnce({ width: 800, height: 600, close })
+    vi.stubGlobal('createImageBitmap', fn)
+    await prepareImage(new Blob(['x']))
+    expect(fn).toHaveBeenCalledTimes(2)
+    expect(fn.mock.calls[1]).toHaveLength(1)
+    expect(close).toHaveBeenCalled()
+  })
+
+  it('falls back to an img element and releases the object URL', async () => {
+    vi.stubGlobal('createImageBitmap', undefined)
+    const revoke = vi.fn()
+    vi.stubGlobal('URL', { createObjectURL: () => 'blob:x', revokeObjectURL: revoke })
+    Object.defineProperty(HTMLImageElement.prototype, 'decode', {
+      configurable: true,
+      value: vi.fn().mockResolvedValue(undefined),
+    })
+    vi.spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get').mockReturnValue(3000)
+    vi.spyOn(HTMLImageElement.prototype, 'naturalHeight', 'get').mockReturnValue(2000)
+    await prepareImage(new Blob(['x']))
+    expect(sizes[0]).toEqual({ width: 1600, height: 1067 })
+    expect(revoke).toHaveBeenCalledWith('blob:x')
+  })
+
+  it('releases the object URL and reports an error when img decoding fails', async () => {
+    vi.stubGlobal('createImageBitmap', undefined)
+    const revoke = vi.fn()
+    vi.stubGlobal('URL', { createObjectURL: () => 'blob:y', revokeObjectURL: revoke })
+    Object.defineProperty(HTMLImageElement.prototype, 'decode', {
+      configurable: true,
+      value: vi.fn().mockRejectedValue(new Error('bad')),
+    })
+    await expect(prepareImage(new Blob(['x']))).rejects.toThrow(decodeErrorMessage)
+    expect(revoke).toHaveBeenCalledWith('blob:y')
+  })
+
+  it('rejects when the browser cannot encode JPEG (PNG fallback of toDataURL)', async () => {
+    toDataURL.mockReturnValue('data:image/png;base64,AAAA')
+    await expect(prepareImage(new Blob(['x']))).rejects.toThrow(decodeErrorMessage)
+  })
+
+  it('rejects when no 2d context is available', async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
+    await expect(prepareImage(new Blob(['x']))).rejects.toThrow(decodeErrorMessage)
+  })
+
+  it('accepts exactly the limit (Base64 part without prefix) and rejects one more', async () => {
+    toDataURL.mockReturnValue(urlOfLength(MAX_BASE64_LENGTH))
+    const url = await prepareImage(new Blob(['x']))
+    expect(url.slice(url.indexOf(',') + 1).length).toBe(MAX_BASE64_LENGTH)
+    toDataURL.mockReturnValue(urlOfLength(MAX_BASE64_LENGTH + 1))
+    await expect(prepareImage(new Blob(['x']))).rejects.toThrow(tooLargeMessage)
+  })
+
+  it('does not restart at quality 0.8 when the edge shrinks', async () => {
+    toDataURL.mockImplementation(() =>
+      urlOfLength(sizes.at(-1)!.width > 1300 ? MAX_BASE64_LENGTH + 1 : 1000),
+    )
+    await prepareImage(new Blob(['x']))
+    expect(toDataURL.mock.calls.map((c) => c[1])).toEqual([0.8, 0.7, 0.6, 0.5, 0.4, 0.4])
+  })
+})
+
 describe('prepareImage', () => {
   it('decodes with EXIF orientation and scales a 12 MP photo to 1600 px', async () => {
     const file = new Blob(['x'], { type: 'image/jpeg' })

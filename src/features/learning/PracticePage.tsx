@@ -9,7 +9,7 @@ import { GridPaper } from '@/components/paper/GridPaper'
 import { MarginNote } from '@/components/paper/MarginNote'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { buttonClass } from '@/lib/buttonClass'
 import { cn } from '@/lib/utils'
 import {
@@ -120,6 +120,7 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
   const [hasInk, setHasInk] = useState(false)
   const [mode, setMode] = useState<'drawing' | 'photo'>('drawing')
   const [photo, setPhoto] = useState<string | null>(null)
+  const [photoKey, setPhotoKey] = useState(0) // remounts PhotoInput to drop a rejected photo
   const [value, setValue] = useState('')
   const [selected, setSelected] = useState<number[]>([])
   const [hints, setHints] = useState<string[]>([])
@@ -138,7 +139,20 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
     if (pending) return
     if (handwriting) {
       const image = mode === 'photo' ? photo : canvasRef.current?.toImage()
-      if (image) grade.mutate({ exerciseId: exercise.id, image, kind: mode })
+      if (image) {
+        grade.mutate(
+          { exerciseId: exercise.id, image, kind: mode },
+          {
+            onSuccess: (r) => {
+              // The same photo would only be rejected again (and burn the rate limit): ask for a new one.
+              if (r.status === 'unreadable' && mode === 'photo') {
+                setPhoto(null)
+                setPhotoKey((k) => k + 1)
+              }
+            },
+          },
+        )
+      }
       return
     }
     submit.mutate({
@@ -206,38 +220,32 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
         contentClassName={handwriting ? 'p-0' : 'py-4'}
       >
         {handwriting ? (
-          <div>
-            <Tabs
-              value={mode}
-              onValueChange={(v) => {
-                setMode(v === 'photo' ? 'photo' : 'drawing')
-                if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
-              }}
-              className="border-b p-2"
-            >
+          <Tabs
+            value={mode}
+            onValueChange={(v) => {
+              setMode(v === 'photo' ? 'photo' : 'drawing')
+              if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
+            }}
+            className="gap-0"
+          >
+            <div className="border-b p-2">
               <TabsList aria-label="Wie gibst du deine Lösung ab?" className="h-auto">
                 <TabsTrigger
                   value="drawing"
-                  id="mode-drawing"
                   className="min-h-11 px-4"
                   disabled={pending || !!graded}
                 >
                   <Pencil aria-hidden="true" />
                   Zeichnen
                 </TabsTrigger>
-                <TabsTrigger
-                  value="photo"
-                  id="mode-photo"
-                  className="min-h-11 px-4"
-                  disabled={pending || !!graded}
-                >
+                <TabsTrigger value="photo" className="min-h-11 px-4" disabled={pending || !!graded}>
                   <Camera aria-hidden="true" />
                   Foto
                 </TabsTrigger>
               </TabsList>
-            </Tabs>
+            </div>
             {/* Both panels stay mounted so the drawing survives switching to the photo and back. */}
-            <div role="tabpanel" aria-labelledby="mode-drawing" hidden={mode !== 'drawing'}>
+            <TabsContent value="drawing" keepMounted className="text-base">
               <HandwritingCanvas
                 ref={canvasRef}
                 disabled={grade.isPending}
@@ -247,17 +255,18 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
                   if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
                 }}
               />
-            </div>
-            <div role="tabpanel" aria-labelledby="mode-photo" hidden={mode !== 'photo'}>
+            </TabsContent>
+            <TabsContent value="photo" keepMounted className="text-base">
               <PhotoInput
+                key={photoKey}
                 disabled={pending || !!graded}
                 onChange={(image) => {
                   setPhoto(image)
                   if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
                 }}
               />
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
         ) : exercise.type === 'numeric' ? (
           <div className="flex items-center gap-3">
             <Input
