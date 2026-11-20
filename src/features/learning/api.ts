@@ -250,15 +250,15 @@ export type HandwritingResult =
 
 const GRADING_TIMEOUT_MS = 60_000
 
-/** Sends the drawn solution to the grade-handwriting Edge Function. The image is never stored. */
+/** Sends the drawn or photographed solution to the grade-handwriting Edge Function. The image is never stored. */
 export function useGradeHandwriting() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (args: { exerciseId: string; image: string }) => {
+    mutationFn: async (args: { exerciseId: string; image: string; kind: 'drawing' | 'photo' }) => {
       const { data, error } = await supabase.functions.invoke<HandwritingResult>(
         'grade-handwriting',
         {
-          body: { exerciseId: args.exerciseId, image: args.image, kind: 'drawing' },
+          body: { exerciseId: args.exerciseId, image: args.image, kind: args.kind },
           timeout: GRADING_TIMEOUT_MS,
         },
       )
@@ -279,7 +279,7 @@ export function useGradeHandwriting() {
 }
 
 export const gradingFallbackMessage =
-  'Die Korrektur hat nicht geantwortet. Prüf deine Verbindung und gib deine Lösung noch einmal ab – deine Zeichnung bleibt erhalten.'
+  'Die Korrektur hat nicht geantwortet. Prüf deine Verbindung und gib deine Lösung noch einmal ab – deine Eingabe bleibt erhalten.'
 
 export async function fetchHint(exerciseId: string, index: number): Promise<string | null> {
   const { data, error } = await supabase.rpc('get_hint', {

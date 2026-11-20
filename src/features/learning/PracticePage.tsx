@@ -1,4 +1,4 @@
-import { Lightbulb } from 'lucide-react'
+import { Lightbulb, Pencil, Camera } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router'
 import { AppHeader } from '@/components/layout/AppHeader'
@@ -9,6 +9,7 @@ import { GridPaper } from '@/components/paper/GridPaper'
 import { MarginNote } from '@/components/paper/MarginNote'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { buttonClass } from '@/lib/buttonClass'
 import { cn } from '@/lib/utils'
 import {
@@ -25,6 +26,7 @@ import {
 } from './api'
 import { HANDWRITING_ENABLED } from './config'
 import { HandwritingCanvas, type HandwritingCanvasHandle } from './HandwritingCanvas'
+import { PhotoInput } from './PhotoInput'
 import { ScoreBar } from './ScoreBar'
 import { selectExercise } from './selectExercise'
 
@@ -116,6 +118,8 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
   const grade = useGradeHandwriting()
   const canvasRef = useRef<HandwritingCanvasHandle>(null)
   const [hasInk, setHasInk] = useState(false)
+  const [mode, setMode] = useState<'drawing' | 'photo'>('drawing')
+  const [photo, setPhoto] = useState<string | null>(null)
   const [value, setValue] = useState('')
   const [selected, setSelected] = useState<number[]>([])
   const [hints, setHints] = useState<string[]>([])
@@ -133,8 +137,8 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
     if (result) return onNext()
     if (pending) return
     if (handwriting) {
-      const image = canvasRef.current?.toImage()
-      if (image) grade.mutate({ exerciseId: exercise.id, image })
+      const image = mode === 'photo' ? photo : canvasRef.current?.toImage()
+      if (image) grade.mutate({ exerciseId: exercise.id, image, kind: mode })
       return
     }
     submit.mutate({
@@ -150,7 +154,9 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
   }
 
   const canSubmit = handwriting
-    ? hasInk
+    ? mode === 'photo'
+      ? photo !== null
+      : hasInk
     : exercise.type === 'numeric'
       ? value.trim() !== ''
       : selected.length > 0
@@ -188,7 +194,7 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
             {grade.isPending ? (
               <PendingNote />
             ) : unreadable ? (
-              <UnreadableNote reason={unreadable.reason} />
+              <UnreadableNote reason={unreadable.reason} photo={mode === 'photo'} />
             ) : graded ? (
               <HandwritingNotes result={graded} />
             ) : submit.data ? (
@@ -200,15 +206,58 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
         contentClassName={handwriting ? 'p-0' : 'py-4'}
       >
         {handwriting ? (
-          <HandwritingCanvas
-            ref={canvasRef}
-            disabled={grade.isPending}
-            readOnly={!!graded}
-            onChange={(ink) => {
-              setHasInk(ink)
-              if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
-            }}
-          />
+          <div>
+            <Tabs
+              value={mode}
+              onValueChange={(v) => {
+                setMode(v === 'photo' ? 'photo' : 'drawing')
+                if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
+              }}
+              className="border-b p-2"
+            >
+              <TabsList aria-label="Wie gibst du deine Lösung ab?" className="h-auto">
+                <TabsTrigger
+                  value="drawing"
+                  id="mode-drawing"
+                  className="min-h-11 px-4"
+                  disabled={pending || !!graded}
+                >
+                  <Pencil aria-hidden="true" />
+                  Zeichnen
+                </TabsTrigger>
+                <TabsTrigger
+                  value="photo"
+                  id="mode-photo"
+                  className="min-h-11 px-4"
+                  disabled={pending || !!graded}
+                >
+                  <Camera aria-hidden="true" />
+                  Foto
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            {/* Both panels stay mounted so the drawing survives switching to the photo and back. */}
+            <div role="tabpanel" aria-labelledby="mode-drawing" hidden={mode !== 'drawing'}>
+              <HandwritingCanvas
+                ref={canvasRef}
+                disabled={grade.isPending}
+                readOnly={!!graded}
+                onChange={(ink) => {
+                  setHasInk(ink)
+                  if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
+                }}
+              />
+            </div>
+            <div role="tabpanel" aria-labelledby="mode-photo" hidden={mode !== 'photo'}>
+              <PhotoInput
+                disabled={pending || !!graded}
+                onChange={(image) => {
+                  setPhoto(image)
+                  if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
+                }}
+              />
+            </div>
+          </div>
         ) : exercise.type === 'numeric' ? (
           <div className="flex items-center gap-3">
             <Input
@@ -441,12 +490,22 @@ const unreadableTips: Record<UnreadableReason, string> = {
   photo_quality: 'Mach das Foto bei gutem Licht, gerade und scharf.',
 }
 
-function UnreadableNote({ reason }: { reason: UnreadableReason }) {
+const photoTips: Record<UnreadableReason, string> = {
+  empty: 'Auf dem Foto sehe ich noch keinen Rechenweg.',
+  illegible: 'Schreib deutlicher oder fotografier näher ran, sodass die Schrift das Bild füllt.',
+  off_topic: 'Das sieht nicht nach einer Lösung zu dieser Aufgabe aus.',
+  photo_quality:
+    'Mach das Foto bei gutem Licht, halte die Kamera gerade über das Blatt und warte, bis das Bild scharf ist.',
+}
+
+function UnreadableNote({ reason, photo }: { reason: UnreadableReason; photo: boolean }) {
   return (
     <MarginNote status="unreadable">
-      Nicht lesbar – schreib etwas größer und gib nochmal ab.
+      {photo
+        ? 'Nicht lesbar – mach ein neues Foto und gib nochmal ab.'
+        : 'Nicht lesbar – schreib etwas größer und gib nochmal ab.'}
       <span className="text-fine text-muted-foreground block font-sans font-normal">
-        {unreadableTips[reason]} Das zählt nicht als Versuch.
+        {(photo ? photoTips : unreadableTips)[reason]} Das zählt nicht als Versuch.
       </span>
     </MarginNote>
   )

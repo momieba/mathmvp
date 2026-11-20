@@ -1,7 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import type { HandwritingResult, PracticeExercise } from './api'
+import { decodeErrorMessage, ImageError, prepareImage } from './image'
 import { PracticePage } from './PracticePage'
 
 let exercise: PracticeExercise
@@ -16,6 +17,11 @@ vi.mock('./api', () => ({
   useSubmitAnswer: () => ({ mutate: vi.fn(), isPending: false, data: undefined, error: null }),
   useGradeHandwriting: () => ({ ...gradeState, mutate, reset }),
   fetchHint: vi.fn(),
+}))
+
+vi.mock('./image', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./image')>()),
+  prepareImage: vi.fn(),
 }))
 
 vi.mock('./HandwritingCanvas', () => ({
@@ -125,7 +131,11 @@ describe('PracticePage with handwriting', () => {
     fireEvent.click(screen.getByRole('button', { name: 'schreiben' }))
     expect(submit).toBeEnabled()
     fireEvent.click(submit)
-    expect(mutate).toHaveBeenCalledWith({ exerciseId: 'e1', image: 'data:image/png;base64,AAAA' })
+    expect(mutate).toHaveBeenCalledWith({
+      exerciseId: 'e1',
+      image: 'data:image/png;base64,AAAA',
+      kind: 'drawing',
+    })
   })
 
   it('shows progress while grading and locks the sheet', () => {
@@ -190,5 +200,86 @@ describe('PracticePage with handwriting', () => {
     }
     renderPage()
     expect(screen.getByRole('alert')).toHaveTextContent('Warte eine Minute')
+  })
+  describe('photo', () => {
+    const pickFile = (testId: string) =>
+      fireEvent.change(screen.getByTestId(testId), {
+        target: { files: [new File(['x'], 'rechnung.jpg', { type: 'image/jpeg' })] },
+      })
+
+    it('switches between drawing and photo and keeps the drawing surface mounted', () => {
+      renderPage()
+      fireEvent.click(screen.getByRole('button', { name: 'schreiben' }))
+      const canvas = screen.getByTestId('canvas')
+      expect(screen.getByRole('tab', { name: 'Zeichnen' })).toHaveAttribute('aria-selected', 'true')
+
+      fireEvent.click(screen.getByRole('tab', { name: 'Foto' }))
+      expect(screen.getByRole('tab', { name: 'Foto' })).toHaveAttribute('aria-selected', 'true')
+      expect(
+        screen.getByText('Nur deinen Rechenweg fotografieren – keine Gesichter oder Namen.'),
+      ).toBeVisible()
+      expect(canvas).not.toBeVisible()
+      expect(screen.getByRole('button', { name: 'Lösung abgeben' })).toBeDisabled()
+
+      fireEvent.click(screen.getByRole('tab', { name: 'Zeichnen' }))
+      expect(screen.getByTestId('canvas')).toBe(canvas)
+      expect(canvas).toBeVisible()
+      expect(screen.getByRole('button', { name: 'Lösung abgeben' })).toBeEnabled()
+      expect(mutate).not.toHaveBeenCalled()
+    })
+
+    it('offers camera and gallery inputs', () => {
+      renderPage()
+      fireEvent.click(screen.getByRole('tab', { name: 'Foto' }))
+      expect(screen.getByRole('button', { name: 'Foto aufnehmen' })).toBeEnabled()
+      expect(screen.getByRole('button', { name: 'Bild auswählen' })).toBeEnabled()
+      expect(screen.getByTestId('photo-camera')).toHaveAttribute('capture', 'environment')
+      expect(screen.getByTestId('photo-gallery')).not.toHaveAttribute('capture')
+    })
+
+    it('shows a preview and submits it as kind photo', async () => {
+      vi.mocked(prepareImage).mockResolvedValue('data:image/jpeg;base64,BBBB')
+      renderPage()
+      fireEvent.click(screen.getByRole('tab', { name: 'Foto' }))
+      pickFile('photo-camera')
+      expect(await screen.findByAltText(/Vorschau/)).toHaveAttribute(
+        'src',
+        'data:image/jpeg;base64,BBBB',
+      )
+      expect(screen.getByRole('button', { name: 'Neues Foto' })).toBeInTheDocument()
+      const submit = screen.getByRole('button', { name: 'Lösung abgeben' })
+      expect(submit).toBeEnabled()
+      fireEvent.click(submit)
+      expect(mutate).toHaveBeenCalledWith({
+        exerciseId: 'e1',
+        image: 'data:image/jpeg;base64,BBBB',
+        kind: 'photo',
+      })
+    })
+
+    it('explains an undecodable image and does not enable submitting', async () => {
+      vi.mocked(prepareImage).mockRejectedValue(new ImageError(decodeErrorMessage))
+      renderPage()
+      fireEvent.click(screen.getByRole('tab', { name: 'Foto' }))
+      pickFile('photo-gallery')
+      expect(await screen.findByRole('alert')).toHaveTextContent(decodeErrorMessage)
+      expect(screen.queryByAltText(/Vorschau/)).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Lösung abgeben' })).toBeDisabled()
+    })
+
+    it('shows photo tips in the unreadable state', async () => {
+      gradeState = {
+        isPending: false,
+        error: null,
+        data: { status: 'unreadable', reason: 'photo_quality' },
+      }
+      renderPage()
+      fireEvent.click(screen.getByRole('tab', { name: 'Foto' }))
+      await waitFor(() =>
+        expect(screen.getByText(/Nicht lesbar – mach ein neues Foto/)).toBeInTheDocument(),
+      )
+      expect(screen.getByText(/gutem Licht, halte die Kamera gerade/)).toBeInTheDocument()
+      expect(screen.getByText(/zählt nicht als Versuch/)).toBeInTheDocument()
+    })
   })
 })
