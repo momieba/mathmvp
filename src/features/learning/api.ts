@@ -229,6 +229,8 @@ export type GradedStep = {
   verdict: StepVerdict
   comment: string
   referenceStep: number | null
+  /** Incorrect steps: [ymin, xmin, ymax, xmax] (0–1000) of the mistake in the submitted image. */
+  box?: [number, number, number, number] | null
 }
 
 /** Response of the grade-handwriting Edge Function. */

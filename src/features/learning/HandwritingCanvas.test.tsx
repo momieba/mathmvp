@@ -34,6 +34,8 @@ beforeEach(() => {
     toJSON: () => ({}),
   })
   Element.prototype.setPointerCapture = vi.fn()
+  // start height scales with the screen: 60 % of 600 px = 18 rows = 360 px
+  Object.defineProperty(window, 'innerHeight', { value: 600, configurable: true })
 })
 
 afterEach(() => {
@@ -166,6 +168,12 @@ describe('HandwritingCanvas', () => {
     rerender(<HandwritingCanvas readOnly />)
     expect(screen.queryByRole('group', { name: 'Zeichenwerkzeuge' })).not.toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Deine abgegebene Lösung' })).toBeInTheDocument()
+  })
+
+  it('starts with a bigger sheet on tall screens (tablets)', () => {
+    Object.defineProperty(window, 'innerHeight', { value: 1000, configurable: true })
+    render(<HandwritingCanvas />)
+    expect(sheet().style.height).toBe('600px') // 60 % of the screen = 30 rows
   })
 
   it('lets the sheet grow with "Mehr Platz"', () => {

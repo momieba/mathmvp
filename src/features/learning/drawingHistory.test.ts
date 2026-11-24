@@ -1,4 +1,5 @@
 import {
+  boxToCanvas,
   canRedo,
   canUndo,
   emptyHistory,
@@ -111,5 +112,17 @@ describe('planExport', () => {
   it('limits the long edge to 1600 px', () => {
     const plan = planExport([stroke(0, 0), stroke(3900, 100)], { width: 4000, height: 600 })!
     expect(Math.max(plan.outWidth, plan.outHeight)).toBeLessThanOrEqual(1600)
+  })
+})
+
+describe('boxToCanvas', () => {
+  it('maps a normalised box of the cropped image back to canvas px', () => {
+    const plan = { x: 100, y: 40, width: 400, height: 200 }
+    expect(boxToCanvas([500, 250, 1000, 750], plan)).toEqual({
+      x0: 200,
+      x1: 400,
+      top: 140,
+      y: 240,
+    })
   })
 })

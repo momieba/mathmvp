@@ -19,16 +19,19 @@ import {
   useProgress,
   useSubmitAnswer,
   useSubtopic,
-  type HandwritingResult,
   type PracticeExercise,
-  type SubmitResult,
   type UnreadableReason,
 } from './api'
 import { HANDWRITING_ENABLED } from './config'
+import { HandwritingNotes, ResultNote, Solution, type Result } from './Feedback'
+import { marksOf } from './feedbackText'
 import { HandwritingCanvas, type HandwritingCanvasHandle } from './HandwritingCanvas'
 import { PhotoInput } from './PhotoInput'
 import { ScoreBar } from './ScoreBar'
 import { selectExercise } from './selectExercise'
+
+const isHandwritten = (e: Pick<PracticeExercise, 'type'>) =>
+  e.type === 'numeric' || e.type === 'handwritten'
 
 const difficultyLabels = {
   leicht: 'leicht',
@@ -66,10 +69,22 @@ export function PracticePage() {
     setRound((r) => r + 1)
   }
 
+  // Handwriting needs a big sheet (tablets): wide page, task text keeps its reading measure.
+  const width = current && HANDWRITING_ENABLED && isHandwritten(current) ? 'wide' : 'reading'
+  const topic = subtopic.data?.topics
   return (
     <PageShell
-      width="reading"
-      header={<AppHeader width="reading" back={{ to: '/app', label: 'Meine Themen' }} />}
+      width={width}
+      header={
+        <AppHeader
+          width={width}
+          back={
+            topic
+              ? { to: `/app/thema/${topic.slug}`, label: topic.title }
+              : { to: '/app', label: 'Meine Themen' }
+          }
+        />
+      }
     >
       {subtopic.isPending ? (
         <p role="status" className="text-muted-foreground">
@@ -110,9 +125,6 @@ export function PracticePage() {
   )
 }
 
-type Result = Pick<SubmitResult, 'correct' | 'answer' | 'solution'>
-type Graded = Extract<HandwritingResult, { status: 'graded' }>
-
 function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext: () => void }) {
   const submit = useSubmitAnswer()
   const grade = useGradeHandwriting()
@@ -125,8 +137,7 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
   const [selected, setSelected] = useState<number[]>([])
   const [hints, setHints] = useState<string[]>([])
   const [noMoreHints, setNoMoreHints] = useState(false)
-  const handwriting =
-    HANDWRITING_ENABLED && (exercise.type === 'numeric' || exercise.type === 'handwritten')
+  const handwriting = HANDWRITING_ENABLED && isHandwritten(exercise)
   const graded = grade.data?.status === 'graded' ? grade.data : undefined
   const unreadable = grade.data?.status === 'unreadable' ? grade.data : undefined
   const result: Result | undefined = submit.data ?? graded
@@ -216,7 +227,12 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
             ) : null}
           </div>
         }
-        marginClassName="max-md:has-[[role=status]:empty]:hidden"
+        marginAt={handwriting ? 'lg' : 'md'}
+        marginClassName={
+          handwriting
+            ? 'max-lg:has-[[role=status]:empty]:hidden'
+            : 'max-md:has-[[role=status]:empty]:hidden'
+        }
         contentClassName={handwriting ? 'p-0' : 'py-4'}
       >
         {handwriting ? (
@@ -250,6 +266,7 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
                 ref={canvasRef}
                 disabled={grade.isPending}
                 readOnly={!!graded}
+                marks={graded && mode === 'drawing' ? marksOf(graded.steps) : undefined}
                 onChange={(ink) => {
                   setHasInk(ink)
                   if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
@@ -260,6 +277,7 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
               <PhotoInput
                 key={photoKey}
                 disabled={pending || !!graded}
+                marks={graded && mode === 'photo' ? marksOf(graded.steps) : undefined}
                 onChange={(image) => {
                   setPhoto(image)
                   if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
@@ -410,88 +428,6 @@ function PendingNote({ afterMs = 8000 }: { afterMs?: number }) {
   )
 }
 
-function formatNumber(n: number) {
-  return String(n).replace('.', ',')
-}
-
-function correctAnswerText(answer: SubmitResult['answer']) {
-  return answer.value !== undefined
-    ? `${formatNumber(answer.value)}${answer.unit ? ` ${answer.unit}` : ''}`
-    : answer.correct?.map((i) => answer.options?.[i]).join(', ')
-}
-
-/** Correction in the margin of the answer sheet. */
-function ResultNote({ result }: { result: SubmitResult }) {
-  const correctText = correctAnswerText(result.answer)
-
-  return result.correct ? (
-    <MarginNote status="correct" animate>
-      Stimmt!
-    </MarginNote>
-  ) : (
-    <MarginNote status="wrong" animate>
-      Nicht ganz.
-      {correctText && (
-        <>
-          {' '}
-          Richtig ist: <RichText text={correctText} />
-        </>
-      )}
-    </MarginNote>
-  )
-}
-
-const verdictStatus = { correct: 'correct', incorrect: 'wrong', unclear: 'unclear' } as const
-const stepFallback = {
-  correct: 'Stimmt.',
-  incorrect: 'Hier stimmt etwas nicht.',
-  unclear: 'Das kann ich nicht sicher lesen.',
-} as const
-const finalStatus = { correct: 'correct', incorrect: 'wrong', missing: 'unclear' } as const
-const finalFallback = {
-  correct: 'Dein Endergebnis stimmt.',
-  incorrect: 'Dein Endergebnis stimmt nicht.',
-  missing: 'Ich finde kein Endergebnis. Schreib es zum Schluss deutlich auf.',
-} as const
-
-/** One margin note per step (below the sheet on phones), then the result and the overall verdict. */
-function HandwritingNotes({ result }: { result: Graded }) {
-  const correctText = result.correct ? undefined : correctAnswerText(result.answer)
-  const n = result.steps.length
-  return (
-    <div className="flex flex-col gap-3">
-      {result.steps.map((step, i) => (
-        <MarginNote key={i} status={verdictStatus[step.verdict]} step={i + 1} index={i} animate>
-          {step.studentWork && (
-            <span className="text-fine text-muted-foreground block font-sans font-normal">
-              <RichText text={step.studentWork} />
-            </span>
-          )}
-          <RichText text={step.comment || stepFallback[step.verdict]} />
-        </MarginNote>
-      ))}
-      <MarginNote status={finalStatus[result.final.verdict]} index={n} animate>
-        Ergebnis: <RichText text={result.final.comment || finalFallback[result.final.verdict]} />
-      </MarginNote>
-      <MarginNote status={result.correct ? 'correct' : 'wrong'} index={n + 1} animate>
-        {result.correct ? 'Stimmt!' : 'Nicht ganz.'}
-        {result.summary && (
-          <>
-            {' '}
-            <RichText text={result.summary} />
-          </>
-        )}
-        {correctText && (
-          <>
-            {' '}
-            Richtig ist: <RichText text={correctText} />
-          </>
-        )}
-      </MarginNote>
-    </div>
-  )
-}
-
 const unreadableTips: Record<UnreadableReason, string> = {
   empty: 'Auf dem Blatt steht noch nichts, das ich lesen kann.',
   illegible: 'Schreib deutlicher, mit etwas mehr Abstand zwischen den Zeilen.',
@@ -517,34 +453,5 @@ function UnreadableNote({ reason, photo }: { reason: UnreadableReason; photo: bo
         {(photo ? photoTips : unreadableTips)[reason]} Das zählt nicht als Versuch.
       </span>
     </MarginNote>
-  )
-}
-
-function Solution({ result }: { result: Result }) {
-  return (
-    <GridPaper as="section" aria-labelledby="solution-heading" contentClassName="py-4">
-      <h2 id="solution-heading" className="text-h3">
-        Musterlösung
-      </h2>
-      <ol className="mt-3 space-y-4">
-        {result.solution.steps.map((step, i) => (
-          <li key={i} className="flex gap-3">
-            <span aria-hidden="true" className="casual text-primary w-6 shrink-0 text-lg">
-              {i + 1}
-            </span>
-            <div className="min-w-0">
-              <RichText text={step.text} />
-              {step.diagram && <DiagramView diagram={step.diagram} />}
-            </div>
-          </li>
-        ))}
-      </ol>
-      <p className="mt-4 border-t-2 pt-3">
-        <span className="font-semibold">Ergebnis: </span>
-        <mark className="bg-marker text-marker-foreground rounded-[2px] px-1">
-          <RichText text={result.solution.result} />
-        </mark>
-      </p>
-    </GridPaper>
   )
 }

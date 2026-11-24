@@ -1,6 +1,7 @@
 import { Camera, ImagePlus } from 'lucide-react'
 import { useId, useRef, useState, type ChangeEvent } from 'react'
 import { Button } from '@/components/ui/button'
+import type { Mark } from './HandwritingCanvas'
 import { ImageError, prepareImage } from './image'
 
 type Props = {
@@ -8,13 +9,15 @@ type Props = {
   disabled?: boolean
   /** Prepared JPEG data URL, or null when there is no photo (yet / any more). */
   onChange?: (image: string | null) => void
+  /** Mistakes to underline on the preview (boxes of the grader, 0–1000 of the photo). */
+  marks?: readonly Mark[]
 }
 
 /**
  * Photo path of the answer sheet: take a photo (camera on phones) or pick an image, shrink it in
  * the browser, show a preview. The image only lives in memory – no storage, no upload before submit.
  */
-export function PhotoInput({ disabled = false, onChange }: Props) {
+export function PhotoInput({ disabled = false, onChange, marks }: Props) {
   const hintId = useId()
   const cameraRef = useRef<HTMLInputElement>(null)
   const galleryRef = useRef<HTMLInputElement>(null)
@@ -69,11 +72,54 @@ export function PhotoInput({ disabled = false, onChange }: Props) {
       </p>
 
       {preview && (
-        <img
-          src={preview}
-          alt="Vorschau: dein fotografierter Rechenweg"
-          className="bg-background max-h-96 w-full rounded-lg border object-contain"
-        />
+        // The overlay needs the box of the image itself, so the wrapper shrinks to the image.
+        <div className="relative mx-auto w-fit max-w-full">
+          <img
+            src={preview}
+            alt="Vorschau: dein fotografierter Rechenweg"
+            className="bg-background block max-h-[32rem] max-w-full rounded-lg border"
+          />
+          {marks && marks.length > 0 && (
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 1000 1000"
+              preserveAspectRatio="none"
+              className="text-wrong pointer-events-none absolute inset-0 size-full overflow-visible"
+            >
+              {marks.map(({ box: [, xmin, ymax, xmax], label }) => (
+                <g key={label}>
+                  <line
+                    x1={xmin}
+                    x2={xmax}
+                    y1={Math.min(1000, ymax + 8)}
+                    y2={Math.min(1000, ymax + 8)}
+                    stroke="currentColor"
+                    strokeWidth={3}
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                </g>
+              ))}
+            </svg>
+          )}
+          {marks?.map(({ box: [, , ymax, xmax], label }) => (
+            <span
+              key={label}
+              aria-hidden="true"
+              className="casual text-wrong absolute -translate-y-1/2 pl-1 text-base font-semibold"
+              style={{ left: `${xmax / 10}%`, top: `${Math.min(100, ymax / 10 + 0.8)}%` }}
+            >
+              {label}
+            </span>
+          ))}
+          {marks && marks.length > 0 && (
+            <ol className="sr-only">
+              {marks.map((m) => (
+                <li key={m.label}>Fehler in Schritt {m.label} ist rot unterstrichen.</li>
+              ))}
+            </ol>
+          )}
+        </div>
       )}
 
       <div className="flex flex-wrap gap-3">

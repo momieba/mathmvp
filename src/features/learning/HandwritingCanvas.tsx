@@ -16,6 +16,7 @@ import { KARO_SIZE } from '@/components/paper/GridPaper'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
+  boxToCanvas,
   canRedo,
   canUndo,
   emptyHistory,
@@ -24,6 +25,8 @@ import {
   historyReducer,
   PEN_WIDTH,
   planExport,
+  type Box,
+  type ExportPlan,
   type Point,
   type Stroke,
 } from './drawingHistory'
@@ -41,10 +44,22 @@ type Props = {
   readOnly?: boolean
   /** Called after every change of the sheet (stroke, undo, redo, clear) and once on mount. */
   onChange?: (hasInk: boolean) => void
+  /**
+   * Mistakes to underline (boxes of the grader, relative to the last exported image) with the step
+   * number written next to them. Shown on top of the drawing, never exported.
+   */
+  marks?: readonly { box: Box; label: number }[]
 }
 
-const DEFAULT_ROWS = 18 // Karo rows of the sheet (18 × 20 px = 360 px)
+export type Mark = NonNullable<Props['marks']>[number]
+
+const MIN_ROWS = 18 // Karo rows of the sheet (18 × 20 px = 360 px)
 const MORE_ROWS = 8
+/** Start height: about 60 % of the screen height (big sheet on tablets), at least MIN_ROWS. */
+const defaultRows = () =>
+  typeof window === 'undefined'
+    ? MIN_ROWS
+    : Math.min(32, Math.max(MIN_ROWS, Math.floor((window.innerHeight * 0.6) / KARO_SIZE)))
 const MAX_ROWS = 60
 const MAX_ROWS_PHONE = 36 // a taller sheet is hard to reach on a phone
 const maxRows = () =>
@@ -52,6 +67,7 @@ const maxRows = () =>
     ? MAX_ROWS_PHONE
     : MAX_ROWS
 const INK_FALLBACK = '#1e3fbf' // Königsblau, light theme token
+const WRONG_FALLBACK = '#c2132d'
 const INK_EXPORT = '#1e3fbf' // always dark ink on white for the model, also in dark mode
 
 /**
@@ -60,7 +76,7 @@ const INK_EXPORT = '#1e3fbf' // always dark ink on white for the model, also in 
  * has been seen, touch input is ignored. Undo/redo/clear via toolbar and Ctrl+Z / Ctrl+Y.
  */
 export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
-  function HandwritingCanvas({ disabled = false, readOnly = false, onChange }, ref) {
+  function HandwritingCanvas({ disabled = false, readOnly = false, onChange, marks }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const hintId = useId()
     const [history, dispatch] = useReducer(historyReducer, emptyHistory)
@@ -69,17 +85,23 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     const penSeen = useRef(false)
     const activePointer = useRef<number | null>(null) // the pointer that owns the current stroke
     const [tool, setTool] = useState<'pen' | 'eraser'>('pen')
-    const [rows, setRows] = useState(DEFAULT_ROWS)
+    const [minRows] = useState(defaultRows)
+    const [rows, setRows] = useState(minRows)
+    const lastPlan = useRef<ExportPlan | null>(null) // crop of the last exported image (for marks)
     const [announcement, setAnnouncement] = useState('')
     const locked = disabled || readOnly
     // shrinking must not cut off anything that was written
     const lowestInk = strokes.reduce((m, s) => s.points.reduce((a, p) => Math.max(a, p.y), m), 0)
-    const canShrink = rows > DEFAULT_ROWS && lowestInk <= (rows - MORE_ROWS) * KARO_SIZE - 20
+    const canShrink = rows > minRows && lowestInk <= (rows - MORE_ROWS) * KARO_SIZE - 20
 
     const strokesRef = useRef(strokes)
     useEffect(() => {
       strokesRef.current = strokes
     }, [strokes])
+    const marksRef = useRef(marks)
+    useEffect(() => {
+      marksRef.current = marks
+    }, [marks])
     const onChangeRef = useRef(onChange)
     useEffect(() => {
       onChangeRef.current = onChange
@@ -99,9 +121,14 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       for (const s of [...strokesRef.current, ...(current.current ? [current.current] : [])]) {
         drawStroke(ctx, s, { ink: color })
       }
+      const plan = lastPlan.current
+      if (plan && marksRef.current?.length) {
+        const wrong = getComputedStyle(canvas).getPropertyValue('--wrong').trim() || WRONG_FALLBACK
+        for (const m of marksRef.current) drawMark(ctx, boxToCanvas(m.box, plan), m.label, wrong)
+      }
     }, [])
 
-    useEffect(() => redraw(), [strokes, redraw])
+    useEffect(() => redraw(), [strokes, marks, redraw])
 
     // Keep the backing store in sync with the CSS size (sharp lines on high-DPI screens) and
     // repaint when the theme changes (ink colour is a theme token).
@@ -136,6 +163,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         if (!canvas) return null
         const { width, height } = canvas.getBoundingClientRect()
         const plan = planExport(strokesRef.current, { width, height })
+        lastPlan.current = plan
         const out = document.createElement('canvas')
         const ctx = plan && out.getContext('2d')
         if (!plan || !ctx) return null
@@ -310,7 +338,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
               <ToolButton
                 label="Weniger Platz"
                 icon={<ChevronsUp className="size-4" />}
-                onClick={() => setRows((r) => Math.max(DEFAULT_ROWS, r - MORE_ROWS))}
+                onClick={() => setRows((r) => Math.max(minRows, r - MORE_ROWS))}
                 disabled={disabled || !canShrink}
               />
             </div>
@@ -344,12 +372,41 @@ function ToolButton({
       aria-pressed={pressed}
       disabled={disabled}
       onClick={onClick}
-      className={className}
+      className={cn('min-h-11 min-w-11', className)}
     >
       {icon}
       <span className="max-md:sr-only">{label}</span>
     </Button>
   )
+}
+
+/** Teacher's correction: red wavy line under the mistake, step number at its right end. */
+function drawMark(
+  ctx: CanvasRenderingContext2D,
+  u: { x0: number; x1: number; y: number },
+  label: number,
+  color: string,
+) {
+  const y = u.y + 4
+  const amp = 2.5
+  const wave = 8
+  ctx.save()
+  ctx.globalCompositeOperation = 'source-over'
+  ctx.strokeStyle = color
+  ctx.fillStyle = color
+  ctx.lineWidth = 2
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.moveTo(u.x0, y)
+  for (let x = u.x0, up = true; x < u.x1; x += wave / 2, up = !up) {
+    const nx = Math.min(u.x1, x + wave / 2)
+    ctx.quadraticCurveTo((x + nx) / 2, y + (up ? -amp : amp) * 2, nx, y)
+  }
+  ctx.stroke()
+  ctx.font = '600 15px "Recursive Variable", "Recursive", sans-serif'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(String(label), u.x1 + 6, y)
+  ctx.restore()
 }
 
 function screenInk(canvas: HTMLCanvasElement) {

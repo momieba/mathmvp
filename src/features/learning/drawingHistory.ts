@@ -114,3 +114,20 @@ export function planExport(
     outHeight: Math.round(height * scale),
   }
 }
+
+/** Box of the grader in the exported image: [ymin, xmin, ymax, xmax], normalised to 0–1000. */
+export type Box = [number, number, number, number]
+
+/** Where to underline a box on the canvas (CSS px): from x0 to x1 just below y. */
+export type Underline = { x0: number; x1: number; y: number; top: number }
+
+/** Maps a box of the exported (cropped) image back onto the canvas the student wrote on. */
+export function boxToCanvas(box: Box, plan: Pick<ExportPlan, 'x' | 'y' | 'width' | 'height'>) {
+  const [ymin, xmin, ymax, xmax] = box
+  return {
+    x0: plan.x + (xmin / 1000) * plan.width,
+    x1: plan.x + (xmax / 1000) * plan.width,
+    top: plan.y + (ymin / 1000) * plan.height,
+    y: plan.y + (ymax / 1000) * plan.height,
+  } satisfies Underline
+}

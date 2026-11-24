@@ -145,22 +145,54 @@ describe('PracticePage with handwriting', () => {
     expect(screen.getByRole('button', { name: 'Wird korrigiert …' })).toBeDisabled()
   })
 
-  it('shows one correction per step, the result and the model solution', () => {
+  it('lists only the steps that need attention, then the correct result', () => {
     gradeState = { isPending: false, error: null, data: gradedResult }
     renderPage()
-    expect(screen.getByText('Schritt 1:')).toBeInTheDocument()
+    expect(screen.queryByText('Schritt 1:')).not.toBeInTheDocument() // correct step: not listed
     expect(screen.getByText('Schritt 2:')).toBeInTheDocument()
     expect(screen.getByText('Schritt 3:')).toBeInTheDocument()
     expect(screen.getByText('Die Wurzel aus 25 ist 5.')).toBeInTheDocument()
-    expect(screen.getByText('Dein Endergebnis stimmt nicht.')).toBeInTheDocument()
-    expect(screen.getByText(/Fast geschafft/)).toBeInTheDocument()
+    // the wrong step already explains it: no extra result line, no summary
+    expect(screen.queryByText('Dein Endergebnis stimmt nicht.')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Fast geschafft/)).not.toBeInTheDocument()
+    expect(screen.getByText(/Richtig ist:/)).toBeInTheDocument()
     // status is carried by text, not by color alone
-    expect(screen.getAllByText('Stimmt').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Nicht richtig').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Nicht eindeutig').length).toBeGreaterThan(0)
     expect(screen.getByRole('heading', { name: 'Musterlösung' })).toBeInTheDocument()
     expect(screen.getByTestId('canvas')).toHaveAttribute('data-readonly', 'true')
     expect(screen.getByRole('button', { name: 'Nächste Aufgabe' })).toBeEnabled()
+  })
+
+  it('shows a single note when everything is right', () => {
+    gradeState = {
+      isPending: false,
+      error: null,
+      data: {
+        ...gradedResult,
+        correct: true,
+        steps: gradedResult.steps.map((s) => ({ ...s, verdict: 'correct' as const })),
+        final: { studentValue: '5', verdict: 'correct', comment: '' },
+        summary: 'Super gemacht.',
+      },
+    }
+    renderPage()
+    expect(screen.getByText(/Super gemacht/)).toBeInTheDocument()
+    expect(screen.queryByText(/Schritt \d:/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Richtig ist:/)).not.toBeInTheDocument()
+  })
+
+  it('shows the result line when no step is marked wrong', () => {
+    gradeState = {
+      isPending: false,
+      error: null,
+      data: {
+        ...gradedResult,
+        steps: [gradedResult.steps[0]!],
+      },
+    }
+    renderPage()
+    expect(screen.getByText('Dein Endergebnis stimmt nicht.')).toBeInTheDocument()
   })
 
   it('shows the unreadable state, keeps the sheet editable and lets the student submit again', () => {

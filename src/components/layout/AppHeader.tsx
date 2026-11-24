@@ -17,14 +17,14 @@ export function AppHeader({
 }: {
   back?: { to: string; label: string }
   actions?: ReactNode
-  width?: 'reading' | 'default'
+  width?: 'reading' | 'default' | 'wide'
 }) {
   return (
     <header className="border-b">
       <div
         className={cn(
           'mx-auto flex min-h-14 items-center justify-between gap-2 px-4 sm:px-6',
-          width === 'reading' ? 'max-w-3xl' : 'max-w-4xl',
+          { reading: 'max-w-3xl', default: 'max-w-4xl', wide: 'max-w-6xl' }[width],
         )}
       >
         {back ? (
