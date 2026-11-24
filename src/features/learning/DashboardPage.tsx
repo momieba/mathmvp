@@ -1,4 +1,4 @@
-import { Search, X } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { AppHeader, ProfileLink } from '@/components/layout/AppHeader'
@@ -9,24 +9,16 @@ import { signOut } from '@/features/auth/api'
 import { AUTH_ENABLED } from '@/features/auth/config'
 import { schoolTypeLabels, stateLabels } from '@/features/curriculum/labels'
 import { useProfile } from '@/features/profile/api'
-import { buttonClass } from '@/lib/buttonClass'
 import {
   useAddTopic,
   useMyTopics,
   useProgress,
-  useRemoveTopic,
   useTopicSearch,
   type MyTopic,
   type SubtopicProgress,
 } from './api'
 import { ScoreBar } from './ScoreBar'
-
-const stageLabels = {
-  einstieg: 'Einstieg',
-  grundlagen: 'Grundlagen',
-  vertiefung: 'Vertiefung',
-  anwendung: 'Anwendung',
-} as const
+import { topicProgress } from './score'
 
 function useDebounced<T>(value: T, ms = 250) {
   const [debounced, setDebounced] = useState(value)
@@ -100,9 +92,9 @@ export function DashboardPage() {
               Noch keine Themen. Such dein erstes Thema, z. B. Brüche.
             </p>
           ) : (
-            <ul className="divide-y border-y">
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {myTopics.data.map((topic) => (
-                <TopicBlock key={topic.id} topic={topic} progress={progress.data} />
+                <TopicTile key={topic.id} topic={topic} progress={progress.data} />
               ))}
             </ul>
           )}
@@ -176,73 +168,32 @@ function TopicSearch({ addedIds }: { addedIds: Set<string> }) {
   )
 }
 
-/** One topic as a table-of-contents entry: title, overall progress, then its sections as ruled rows. */
-function TopicBlock({
+/** One topic as a compact tile; the learning path and the exam are on the topic page. */
+function TopicTile({
   topic,
   progress,
 }: {
   topic: MyTopic
   progress: Map<string, SubtopicProgress> | undefined
 }) {
-  const remove = useRemoveTopic()
-  const scores = topic.subtopics.map((s) => progress?.get(s.id))
-  const total =
-    topic.subtopics.length === 0
-      ? 0
-      : Math.round(scores.reduce((sum, p) => sum + (p?.score ?? 0), 0) / topic.subtopics.length)
-  const attempts = scores.reduce((sum, p) => sum + (p?.attemptCount ?? 0), 0)
-
+  const total = topicProgress(
+    topic.subtopics.map((s) => s.id),
+    progress,
+  )
   return (
-    <li className="py-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h3 className="text-h3">{topic.title}</h3>
-          <p className="text-muted-foreground text-fine measure mt-1">{topic.description}</p>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="-mt-2 -mr-2"
-          aria-label={`${topic.title} aus meinen Themen entfernen`}
-          onClick={() => remove.mutate(topic.id)}
-        >
-          <X aria-hidden="true" className="size-5" />
-        </Button>
-      </div>
-      <ScoreBar score={total} attemptCount={attempts} className="mt-4" />
-      <ol className="mt-4">
-        {topic.subtopics.map((s, i) => {
-          const p = scores[i]
-          return (
-            <li
-              key={s.id}
-              className="flex flex-col gap-1 border-t py-3 sm:flex-row sm:items-center sm:gap-3"
-            >
-              <div className="flex min-w-0 flex-1 items-baseline gap-2">
-                <span className="font-medium">{s.title}</span>
-                <span className="text-muted-foreground text-fine shrink-0">
-                  {stageLabels[s.stage]}
-                </span>
-                <span
-                  aria-hidden="true"
-                  className="mb-1 hidden min-w-4 flex-1 self-end border-b-2 border-dotted sm:block"
-                />
-              </div>
-              <ScoreBar
-                score={p?.score ?? 0}
-                attemptCount={p?.attemptCount ?? 0}
-                className="sm:w-72"
-              />
-              <Link
-                to={`/app/ueben/${s.slug}`}
-                className={buttonClass({ variant: 'outline' }, 'shrink-0')}
-              >
-                Üben
-              </Link>
-            </li>
-          )
-        })}
-      </ol>
+    <li>
+      <Link
+        to={`/app/thema/${topic.slug}`}
+        className="bg-card hover:border-primary focus-visible:ring-ring flex h-full min-h-32 flex-col justify-between gap-4 rounded-lg border-2 p-4 transition-colors focus-visible:ring-2 focus-visible:outline-none"
+      >
+        <span>
+          <span className="text-h3 casual block">{topic.title}</span>
+          <span className="text-muted-foreground text-fine mt-1 block">
+            {total.started} von {topic.subtopics.length} Abschnitten begonnen
+          </span>
+        </span>
+        <ScoreBar score={total.score} attemptCount={total.attemptCount} />
+      </Link>
     </li>
   )
 }

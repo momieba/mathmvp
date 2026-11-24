@@ -1,3 +1,4 @@
+import type { LearningStage } from '@/features/content/enums'
 import type { SchoolType, State } from './schema'
 
 export const stateLabels: Record<State, string> = {
@@ -47,3 +48,10 @@ export const grades = [5, 6, 7, 8, 9, 10, 11, 12, 13] as const
 /** Entries sorted by German label, for select inputs. */
 export const sortedEntries = <K extends string>(labels: Record<K, string>) =>
   (Object.entries(labels) as [K, string][]).sort(([, a], [, b]) => a.localeCompare(b, 'de'))
+
+export const stageLabels: Record<LearningStage, string> = {
+  einstieg: 'Einstieg',
+  grundlagen: 'Grundlagen',
+  vertiefung: 'Vertiefung',
+  anwendung: 'Anwendung',
+}

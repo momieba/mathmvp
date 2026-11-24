@@ -51,6 +51,7 @@ const keys = {
   progress: ['progress'] as const,
   search: (q: string) => ['topic-search', q] as const,
   subtopic: (slug: string) => ['subtopic', slug] as const,
+  topic: (slug: string) => ['topic', slug] as const,
   exercises: (subtopicId: string) => ['exercises', subtopicId] as const,
 }
 
@@ -158,6 +159,39 @@ export function useRemoveTopic() {
   })
 }
 
+export type TopicDetail = Omit<MyTopic, 'addedAt'>
+
+/** One topic with its learning path (also for topics not in "Meine Themen"). */
+export function useTopic(slug: string) {
+  return useQuery({
+    queryKey: keys.topic(slug),
+    queryFn: async (): Promise<TopicDetail | null> => {
+      const { data, error } = await supabase
+        .from('topics')
+        .select('id, slug, title, description, subtopics(id, slug, title, stage, sort_order)')
+        .eq('slug', slug)
+        .maybeSingle()
+      if (error) throw error
+      if (!data) return null
+      return {
+        id: data.id,
+        slug: data.slug,
+        title: data.title,
+        description: data.description,
+        subtopics: data.subtopics
+          .map((s) => ({
+            id: s.id,
+            slug: s.slug,
+            title: s.title,
+            stage: s.stage,
+            sortOrder: s.sort_order,
+          }))
+          .sort((a, b) => a.sortOrder - b.sortOrder),
+      }
+    },
+  })
+}
+
 export function useSubtopic(slug: string) {
   return useQuery({
     queryKey: keys.subtopic(slug),
@@ -173,6 +207,32 @@ export function useSubtopic(slug: string) {
   })
 }
 
+/** Exercise types the app can take answers for (practice and exam). */
+export const answerableTypes: ExerciseType[] = HANDWRITING_ENABLED
+  ? ['numeric', 'multiple_choice', 'handwritten']
+  : ['numeric', 'multiple_choice']
+
+export const EXERCISE_COLUMNS =
+  'id, type, prompt, diagram, presentation, exercise_placements(difficulty)' as const
+
+export function toPracticeExercise(e: {
+  id: string
+  type: ExerciseType
+  prompt: string
+  diagram: unknown
+  presentation: unknown
+  exercise_placements: { difficulty: Difficulty }[]
+}): PracticeExercise {
+  return {
+    id: e.id,
+    type: e.type,
+    prompt: e.prompt,
+    diagram: (e.diagram as Diagram | null) ?? null,
+    presentation: (e.presentation ?? {}) as PracticeExercise['presentation'],
+    difficulty: e.exercise_placements[0]?.difficulty ?? 'mittel',
+  }
+}
+
 /** Published exercises of a subtopic that the practice page can show. */
 export function usePracticeExercises(subtopicId: string | undefined) {
   return useQuery({
@@ -181,24 +241,12 @@ export function usePracticeExercises(subtopicId: string | undefined) {
     queryFn: async (): Promise<PracticeExercise[]> => {
       const { data, error } = await supabase
         .from('exercises')
-        .select('id, type, prompt, diagram, presentation, exercise_placements(difficulty)')
+        .select(EXERCISE_COLUMNS)
         .eq('subtopic_id', subtopicId!)
         .eq('status', 'published')
-        .in(
-          'type',
-          HANDWRITING_ENABLED
-            ? ['numeric', 'multiple_choice', 'handwritten']
-            : ['numeric', 'multiple_choice'],
-        )
+        .in('type', answerableTypes)
       if (error) throw error
-      return data.map((e) => ({
-        id: e.id,
-        type: e.type,
-        prompt: e.prompt,
-        diagram: (e.diagram as Diagram | null) ?? null,
-        presentation: (e.presentation ?? {}) as PracticeExercise['presentation'],
-        difficulty: e.exercise_placements[0]?.difficulty ?? 'mittel',
-      }))
+      return data.map(toPracticeExercise)
     },
   })
 }

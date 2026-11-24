@@ -87,6 +87,98 @@ export type Database = {
           },
         ]
       }
+      exam_answers: {
+        Row: {
+          answer: Json
+          answered_at: string
+          correct: boolean
+          exercise_id: string
+          feedback: Json | null
+          points: number
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          answer: Json
+          answered_at?: string
+          correct: boolean
+          exercise_id: string
+          feedback?: Json | null
+          points: number
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          answer?: Json
+          answered_at?: string
+          correct?: boolean
+          exercise_id?: string
+          feedback?: Json | null
+          points?: number
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_answers_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_answers_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "exam_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_sessions: {
+        Row: {
+          deadline_at: string
+          exercise_ids: string[]
+          id: string
+          max_points: number
+          points: number | null
+          started_at: string
+          submitted_at: string | null
+          topic_id: string
+          user_id: string
+        }
+        Insert: {
+          deadline_at: string
+          exercise_ids: string[]
+          id?: string
+          max_points: number
+          points?: number | null
+          started_at?: string
+          submitted_at?: string | null
+          topic_id: string
+          user_id: string
+        }
+        Update: {
+          deadline_at?: string
+          exercise_ids?: string[]
+          id?: string
+          max_points?: number
+          points?: number | null
+          started_at?: string
+          submitted_at?: string | null
+          topic_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_sessions_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercise_placements: {
         Row: {
           difficulty: Database["public"]["Enums"]["difficulty"]
@@ -519,6 +611,7 @@ export type Database = {
       }
     }
     Functions: {
+      finish_exam: { Args: { p_session_id: string }; Returns: Json }
       get_hint: {
         Args: { p_exercise_id: string; p_index: number }
         Returns: string
@@ -534,9 +627,20 @@ export type Database = {
           topic_id: string
         }[]
       }
+      start_exam: {
+        Args: {
+          p_topic_id: string
+          p_types: Database["public"]["Enums"]["exercise_type"][]
+        }
+        Returns: Json
+      }
       submit_answer: {
         Args: { p_answer: Json; p_exercise_id: string }
         Returns: Json
+      }
+      submit_exam_answer: {
+        Args: { p_answer: Json; p_exercise_id: string; p_session_id: string }
+        Returns: undefined
       }
     }
     Enums: {

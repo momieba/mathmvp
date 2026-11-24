@@ -3,7 +3,9 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { LandingPage } from '@/features/landing/LandingPage'
 import { DashboardPage } from '@/features/learning/DashboardPage'
+import { ExamPage } from '@/features/learning/exam/ExamPage'
 import { PracticePage } from '@/features/learning/PracticePage'
+import { TopicPage } from '@/features/learning/TopicPage'
 import { DatenschutzPage } from '@/features/legal/DatenschutzPage'
 import { ImpressumPage } from '@/features/legal/ImpressumPage'
 import { ProfilePage } from '@/features/profile/ProfilePage'
@@ -22,6 +24,8 @@ export const router = createBrowserRouter([
         element: <RequireProfile />,
         children: [
           { path: '/app', element: <DashboardPage /> },
+          { path: '/app/thema/:slug', element: <TopicPage /> },
+          { path: '/app/thema/:slug/pruefung', element: <ExamPage /> },
           { path: '/app/ueben/:slug', element: <PracticePage /> },
         ],
       },

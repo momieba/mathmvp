@@ -44,7 +44,14 @@ const finalFallback = {
  * listed; each wrong/unclear step gets one short note (its mistake is underlined in the drawing with
  * the same number), then one closing line with the correct result.
  */
-export function HandwritingNotes({ result }: { result: Graded }) {
+export function HandwritingNotes({
+  result,
+  showWork = false,
+}: {
+  result: Graded
+  /** Quote every flagged line (no drawing with underlines next to it, e.g. exam results). */
+  showWork?: boolean
+}) {
   if (result.correct) {
     return (
       <MarginNote status="correct" animate>
@@ -79,7 +86,7 @@ export function HandwritingNotes({ result }: { result: Graded }) {
             animate
           >
             {/* Without an underline in the drawing, quote the line so the student finds it. */}
-            {!step.box && step.studentWork && (
+            {(showWork || !step.box) && step.studentWork && (
               <span className="text-fine text-muted-foreground block font-sans font-normal">
                 <RichText text={asMath(step.studentWork)} />
               </span>

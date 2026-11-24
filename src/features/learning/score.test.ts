@@ -1,4 +1,4 @@
-import { computeScore, masteryLevel } from './score'
+import { computeScore, masteryLevel, topicProgress } from './score'
 
 const run = (pattern: string) => [...pattern].map((c) => ({ correct: c === 'r' }))
 
@@ -51,5 +51,23 @@ describe('masteryLevel', () => {
     expect(masteryLevel(55, 5)).toBe('ueben')
     expect(masteryLevel(80, 8)).toBe('sicher')
     expect(masteryLevel(100, 10)).toBe('gemeistert')
+  })
+})
+
+describe('topicProgress', () => {
+  it('averages over all subtopics, untouched ones count as 0', () => {
+    const progress = new Map([
+      ['a', { score: 100, attemptCount: 10 }],
+      ['b', { score: 50, attemptCount: 4 }],
+    ])
+    expect(topicProgress(['a', 'b', 'c'], progress)).toEqual({
+      score: 50,
+      attemptCount: 14,
+      started: 2,
+    })
+  })
+  it('is 0 without subtopics or progress', () => {
+    expect(topicProgress([], undefined)).toEqual({ score: 0, attemptCount: 0, started: 0 })
+    expect(topicProgress(['a'], undefined)).toEqual({ score: 0, attemptCount: 0, started: 0 })
   })
 })

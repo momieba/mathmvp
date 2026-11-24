@@ -45,3 +45,21 @@ export const masteryLabels: Record<MasteryLevel, string> = {
   sicher: 'Sicher',
   gemeistert: 'Gemeistert',
 }
+
+/** Topic progress: average score over all its subtopics (untouched ones count as 0). */
+export function topicProgress(
+  subtopicIds: readonly string[],
+  progress: ReadonlyMap<string, { score: number; attemptCount: number }> | undefined,
+) {
+  if (subtopicIds.length === 0) return { score: 0, attemptCount: 0, started: 0 }
+  let sum = 0
+  let attemptCount = 0
+  let started = 0
+  for (const id of subtopicIds) {
+    const p = progress?.get(id)
+    sum += p?.score ?? 0
+    attemptCount += p?.attemptCount ?? 0
+    if (p && p.attemptCount > 0) started++
+  }
+  return { score: Math.round(sum / subtopicIds.length), attemptCount, started }
+}

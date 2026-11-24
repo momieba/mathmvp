@@ -25,6 +25,7 @@ const MAX_IMAGE_BASE64 = 2_000_000 // base64 length limit
 const MAX_BODY_BYTES = 2_100_000
 const MINUTE = 60_000
 const DAY = 24 * 60 * MINUTE
+const EXAM_GRACE_MS = MINUTE // keep in sync with private.exam_grace()
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -100,7 +101,7 @@ Deno.serve(async (req) => {
   const userId = userData.user.id
 
   // --- input ------------------------------------------------------------------------------------
-  let body: { exerciseId?: unknown; image?: unknown; kind?: unknown }
+  let body: { exerciseId?: unknown; image?: unknown; kind?: unknown; examSessionId?: unknown }
   try {
     body = await req.json()
   } catch {
@@ -112,6 +113,7 @@ Deno.serve(async (req) => {
   const image = stripDataUrl(body.image)
   if (image === '') return json({ error: 'exerciseId and image are required' }, 400)
   const kind = body.kind === 'photo' ? 'photo' : 'drawing'
+  const examSessionId = typeof body.examSessionId === 'string' ? body.examSessionId : null
   if (image.length > MAX_IMAGE_BASE64) {
     return json(
       {
@@ -131,6 +133,29 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     { auth: { persistSession: false } },
   )
+
+  // --- exam mode: the session must be the caller's, still open and contain the exercise -----------
+  const examOpen = async () => {
+    const { data: session } = await admin
+      .from('exam_sessions')
+      .select('id, exercise_ids, deadline_at, submitted_at')
+      .eq('id', examSessionId!)
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (!session) return 'missing' as const
+    const over =
+      session.submitted_at !== null ||
+      Date.now() > new Date(session.deadline_at).getTime() + EXAM_GRACE_MS
+    if (over) return 'over' as const
+    return session.exercise_ids.includes(body.exerciseId as string)
+      ? ('ok' as const)
+      : ('missing' as const)
+  }
+  if (examSessionId) {
+    const state = await examOpen()
+    if (state === 'missing') return json({ error: 'Diese Prüfung gibt es nicht.' }, 404)
+    if (state === 'over') return json({ error: 'Die Prüfungszeit ist abgelaufen.' }, 409)
+  }
 
   // --- rate limit (counts every request, also unreadable ones and failures) -----------------------
   const now = Date.now()
@@ -259,6 +284,34 @@ Deno.serve(async (req) => {
   if (outcome.status === 'unreadable') {
     await setOutcome('unreadable')
     return json({ status: 'unreadable', reason: outcome.reason })
+  }
+
+  // Exam: store the graded answer (1 / 0.5 for a correct result with a wrong step / 0) and reveal
+  // nothing – correctness and solution come with finish_exam.
+  if (examSessionId) {
+    if ((await examOpen()) !== 'ok') {
+      return json({ error: 'Die Prüfungszeit ist abgelaufen.' }, 409)
+    }
+    const points = outcome.correct ? 1 : outcome.final.verdict === 'correct' ? 0.5 : 0
+    const { error } = await admin.from('exam_answers').upsert({
+      session_id: examSessionId,
+      exercise_id: exercise.id,
+      user_id: userId,
+      answer: { kind },
+      correct: outcome.correct,
+      points,
+      feedback: { summary: outcome.summary, steps: outcome.steps, final: outcome.final, model },
+      answered_at: new Date().toISOString(),
+    })
+    if (error) {
+      console.error('exam answer insert failed', error.message)
+      return json(
+        { error: 'Deine Abgabe konnte nicht gespeichert werden. Gib sie noch einmal ab.' },
+        500,
+      )
+    }
+    await setOutcome('graded')
+    return json({ status: 'saved' })
   }
 
   const insertError = await recordGradedAttempt(admin, {
