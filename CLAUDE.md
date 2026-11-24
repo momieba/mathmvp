@@ -58,7 +58,7 @@ Admin-Ansicht         → review → published → archived (noch nicht gebaut �
 - **Hinweise des `math-checker`, dass etwas zu schwer für die Stufe ist, werden immer umgesetzt** – auch wenn er sie nicht als Warnung führt (Wunsch des Users). „Leicht“ heißt auch leichte, im Kopf nachrechenbare Zahlen.
 - Fehlt ein Subthema für neue Aufgaben → zuerst `curriculum-researcher`.
 - Schema-Änderungen → Skill `supabase-migration`.
-- Videos → Skills `create-math-video` (16:9) und `create-math-short` (9:16); Arbeitsverzeichnis `video/`.
+- Videos → Agent `math-video-producer` (läuft im Hintergrund, nutzt die Skills `create-math-video` (16:9) und `create-math-short` (9:16); Short ohne Merksatz); Arbeitsverzeichnis `video/`, Keys nur in `video/.env`.
 - `marketing`, `responder`, `buchhalter` sind Entwürfe (offene Punkte in `docs/TODO.md`), nur auf ausdrückliche Anfrage nutzen.
 - Code-Arbeit: globale devflow-Agenten (`planner` → `implementer` → `tester` → `reviewer`).
 
