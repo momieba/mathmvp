@@ -4,8 +4,18 @@ import { PageShell } from '@/components/layout/PageShell'
 import { Button } from '@/components/ui/button'
 import { stageLabels } from '@/features/curriculum/labels'
 import { buttonClass } from '@/lib/buttonClass'
-import { useAddTopic, useMyTopics, useProgress, useRemoveTopic, useTopic } from './api'
+import {
+  useAddTopic,
+  useMyTopics,
+  usePrerequisites,
+  useProgress,
+  usePublishedVideos,
+  useRemoveTopic,
+  useTopic,
+} from './api'
 import { ExamSection } from './exam/ExamSection'
+import { RecommendationNote } from './RecommendationNote'
+import { recommend } from './recommendations'
 import { ScoreBar } from './ScoreBar'
 import { topicProgress } from './score'
 
@@ -20,6 +30,12 @@ export function TopicPage() {
   const navigate = useNavigate()
 
   const data = topic.data
+  const subtopicIds = data?.subtopics.map((s) => s.id) ?? []
+  const prerequisites = usePrerequisites(subtopicIds)
+  const videos = usePublishedVideos([
+    ...subtopicIds,
+    ...[...(prerequisites.data?.values() ?? [])].flat().map((p) => p.id),
+  ])
   const added = !!data && !!myTopics.data?.some((t) => t.id === data.id)
   const total = data
     ? topicProgress(
@@ -64,32 +80,42 @@ export function TopicPage() {
             <ol className="border-b">
               {data.subtopics.map((s) => {
                 const p = progress.data?.get(s.id)
+                const recommendation = progress.data
+                  ? recommend({
+                      subtopicId: s.id,
+                      progress: progress.data,
+                      prerequisites: prerequisites.data?.get(s.id) ?? [],
+                      videos: videos.data,
+                    })
+                  : null
                 return (
-                  <li
-                    key={s.id}
-                    className="flex flex-col gap-1 border-t py-3 sm:flex-row sm:items-center sm:gap-3"
-                  >
-                    <div className="flex min-w-0 flex-1 items-baseline gap-2">
-                      <span className="font-medium">{s.title}</span>
-                      <span className="text-muted-foreground text-fine shrink-0">
-                        {stageLabels[s.stage]}
-                      </span>
-                      <span
-                        aria-hidden="true"
-                        className="mb-1 hidden min-w-4 flex-1 self-end border-b-2 border-dotted sm:block"
+                  <li key={s.id} className="flex flex-col gap-2 border-t py-3">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                      <div className="flex min-w-0 flex-1 items-baseline gap-2">
+                        <span className="font-medium">{s.title}</span>
+                        <span className="text-muted-foreground text-fine shrink-0">
+                          {stageLabels[s.stage]}
+                        </span>
+                        <span
+                          aria-hidden="true"
+                          className="mb-1 hidden min-w-4 flex-1 self-end border-b-2 border-dotted sm:block"
+                        />
+                      </div>
+                      <ScoreBar
+                        score={p?.score ?? 0}
+                        attemptCount={p?.attemptCount ?? 0}
+                        className="sm:w-72"
                       />
+                      <Link
+                        to={`/app/ueben/${s.slug}`}
+                        className={buttonClass({ variant: 'outline' }, 'shrink-0')}
+                      >
+                        Üben
+                      </Link>
                     </div>
-                    <ScoreBar
-                      score={p?.score ?? 0}
-                      attemptCount={p?.attemptCount ?? 0}
-                      className="sm:w-72"
-                    />
-                    <Link
-                      to={`/app/ueben/${s.slug}`}
-                      className={buttonClass({ variant: 'outline' }, 'shrink-0')}
-                    >
-                      Üben
-                    </Link>
+                    {recommendation && (
+                      <RecommendationNote recommendation={recommendation} compact />
+                    )}
                   </li>
                 )
               })}

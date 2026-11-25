@@ -42,6 +42,11 @@ export function ExamResultView({ sessionId, topic }: { sessionId: string; topic:
     Math.round((new Date(r.submittedAt).getTime() - new Date(r.startedAt).getTime()) / 60_000),
   )
   const byId = new Map(exercises.data?.map((e) => [e.id, e]))
+  // Sections with missed tasks, in learning-path order.
+  const missed = new Set(
+    r.tasks.filter((t) => t.points < 1).map((t) => byId.get(t.exerciseId)?.subtopicId),
+  )
+  const toPractice = topic.subtopics.filter((s) => missed.has(s.id))
 
   return (
     <div className="flex flex-col gap-8">
@@ -73,6 +78,27 @@ export function ExamResultView({ sessionId, topic }: { sessionId: string; topic:
           />
         ))}
       </section>
+
+      {toPractice.length > 0 && (
+        <section aria-labelledby="review-heading" className="border-t pt-6">
+          <h2 id="review-heading" className="text-h2">
+            Das solltest du nochmal üben
+          </h2>
+          <ul className="mt-3 border-b">
+            {toPractice.map((s) => (
+              <li key={s.id} className="flex items-center justify-between gap-4 border-t py-2">
+                <span>{s.title}</span>
+                <Link
+                  to={`/app/ueben/${s.slug}`}
+                  className={buttonClass({ variant: 'outline' }, 'shrink-0')}
+                >
+                  Nochmal üben
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="flex flex-wrap gap-3">
         <Link to={`/app/thema/${topic.slug}/pruefung`} className={buttonClass({})}>

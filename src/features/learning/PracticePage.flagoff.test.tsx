@@ -33,6 +33,8 @@ vi.mock('./api', async (importOriginal) => ({
   useSubtopic: () => ({ isPending: false, data: { id: 's1', title: 'Hypotenuse berechnen' } }),
   usePracticeExercises: () => ({ isPending: false, data: [exercise] }),
   useProgress: () => ({ data: new Map() }),
+  usePrerequisites: () => ({ data: new Map() }),
+  usePublishedVideos: () => ({ data: new Map() }),
 }))
 
 describe('HANDWRITING_ENABLED = false', () => {

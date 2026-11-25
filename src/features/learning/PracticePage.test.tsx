@@ -18,6 +18,8 @@ vi.mock('./api', () => ({
   useSubmitAnswer: () => ({ mutate: vi.fn(), isPending: false, data: submitData, error: null }),
   useGradeHandwriting: () => ({ ...gradeState, mutate, reset }),
   fetchHint: vi.fn(),
+  usePrerequisites: () => ({ data: new Map() }),
+  usePublishedVideos: () => ({ data: new Map() }),
 }))
 
 vi.mock('./image', async (importOriginal) => ({

@@ -16,7 +16,9 @@ import {
   fetchHint,
   useGradeHandwriting,
   usePracticeExercises,
+  usePrerequisites,
   useProgress,
+  usePublishedVideos,
   useSubmitAnswer,
   useSubtopic,
   type PracticeExercise,
@@ -27,6 +29,8 @@ import { HandwritingNotes, ResultNote, Solution, type Result } from './Feedback'
 import { marksOf } from './feedbackText'
 import { HandwritingCanvas, type HandwritingCanvasHandle } from './HandwritingCanvas'
 import { PhotoInput } from './PhotoInput'
+import { RecommendationNote } from './RecommendationNote'
+import { recommend, wrongStreak, type Recommendation } from './recommendations'
 import { ScoreBar } from './ScoreBar'
 import { selectExercise } from './selectExercise'
 
@@ -42,14 +46,36 @@ const difficultyLabels = {
 
 export function PracticePage() {
   const { slug = '' } = useParams()
+  // Fresh state per subtopic (recommendations link from one practice page to another).
+  return <PracticeView key={slug} slug={slug} />
+}
+
+function PracticeView({ slug }: { slug: string }) {
   const subtopic = useSubtopic(slug)
   const exercises = usePracticeExercises(subtopic.data?.id)
   const progress = useProgress()
   const [round, setRound] = useState(0)
   const [pickedId, setPickedId] = useState<string | null>(null)
+  const [results, setResults] = useState<boolean[]>([]) // this session, oldest first
+  const [dismissed, setDismissed] = useState(false)
 
-  const mine = subtopic.data ? progress.data?.get(subtopic.data.id) : undefined
+  const subtopicId = subtopic.data?.id
+  const mine = subtopicId ? progress.data?.get(subtopicId) : undefined
   const score = mine?.score ?? 0
+
+  const prerequisites = usePrerequisites(subtopicId ? [subtopicId] : [])
+  const prereqList = (subtopicId && prerequisites.data?.get(subtopicId)) || []
+  const videos = usePublishedVideos(subtopicId ? [subtopicId, ...prereqList.map((p) => p.id)] : [])
+  const recommendation =
+    subtopicId && !dismissed && progress.data
+      ? recommend({
+          subtopicId,
+          progress: progress.data,
+          prerequisites: prereqList,
+          videos: videos.data,
+          sessionWrongStreak: wrongStreak(results),
+        })
+      : null
 
   const pick = (exclude: string | null) =>
     exercises.data
@@ -117,7 +143,14 @@ export function PracticePage() {
               Thema.
             </p>
           ) : (
-            <ExerciseCard key={`${current.id}-${round}`} exercise={current} onNext={next} />
+            <ExerciseCard
+              key={`${current.id}-${round}`}
+              exercise={current}
+              onNext={next}
+              onResult={(correct) => setResults((r) => [...r, correct])}
+              recommendation={recommendation}
+              onDismissRecommendation={() => setDismissed(true)}
+            />
           )}
         </div>
       )}
@@ -125,7 +158,20 @@ export function PracticePage() {
   )
 }
 
-function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext: () => void }) {
+function ExerciseCard({
+  exercise,
+  onNext,
+  onResult,
+  recommendation,
+  onDismissRecommendation,
+}: {
+  exercise: PracticeExercise
+  onNext: () => void
+  onResult: (correct: boolean) => void
+  /** Shown below the result when the subtopic is shaky. */
+  recommendation: Recommendation | null
+  onDismissRecommendation: () => void
+}) {
   const submit = useSubmitAnswer()
   const grade = useGradeHandwriting()
   const canvasRef = useRef<HandwritingCanvasHandle>(null)
@@ -156,6 +202,7 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
           { exerciseId: exercise.id, image, kind: mode },
           {
             onSuccess: (r) => {
+              if (r.status === 'graded') onResult(r.correct)
               // The same photo would only be rejected again (and burn the rate limit): ask for a new one.
               if (r.status === 'unreadable' && mode === 'photo') {
                 setPhoto(null)
@@ -167,10 +214,13 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
       }
       return
     }
-    submit.mutate({
-      exerciseId: exercise.id,
-      answer: exercise.type === 'numeric' ? { value } : { selected },
-    })
+    submit.mutate(
+      {
+        exerciseId: exercise.id,
+        answer: exercise.type === 'numeric' ? { value } : { selected },
+      },
+      { onSuccess: (r) => onResult(r.correct) },
+    )
   }
 
   async function nextHint() {
@@ -397,6 +447,10 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
 
       {/* Musterlösung: zweites Blatt */}
       {result && <Solution result={result} />}
+
+      {result && recommendation && (
+        <RecommendationNote recommendation={recommendation} onDismiss={onDismissRecommendation} />
+      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" className="px-6" disabled={(!result && !canSubmit) || pending}>

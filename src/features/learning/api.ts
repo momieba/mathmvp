@@ -3,6 +3,7 @@ import type { Difficulty, ExerciseType, LearningStage } from '@/features/content
 import type { Diagram } from '@/features/exercises/schema'
 import { supabase } from '@/lib/supabase'
 import { HANDWRITING_ENABLED } from './config'
+import type { SubtopicRef, VideoRef } from './recommendations'
 import { computeScore } from './score'
 
 export type SubtopicSummary = {
@@ -32,6 +33,7 @@ export type PracticeExercise = {
   diagram: Diagram | null
   presentation: { unit?: string; options?: string[]; multi?: boolean }
   difficulty: Difficulty
+  subtopicId?: string
 }
 
 export type SubmitResult = {
@@ -53,6 +55,8 @@ const keys = {
   subtopic: (slug: string) => ['subtopic', slug] as const,
   topic: (slug: string) => ['topic', slug] as const,
   exercises: (subtopicId: string) => ['exercises', subtopicId] as const,
+  prerequisites: (ids: string[]) => ['prerequisites', ...ids] as const,
+  videos: (ids: string[]) => ['videos', ...ids] as const,
 }
 
 export function useMyTopics() {
@@ -192,6 +196,57 @@ export function useTopic(slug: string) {
   })
 }
 
+/** Prerequisites per subtopic (may lie in other topics), keyed by the dependent subtopic. */
+export function usePrerequisites(subtopicIds: readonly string[]) {
+  const ids = [...subtopicIds].sort()
+  return useQuery({
+    queryKey: keys.prerequisites(ids),
+    enabled: ids.length > 0,
+    queryFn: async (): Promise<Map<string, SubtopicRef[]>> => {
+      const { data, error } = await supabase
+        .from('subtopic_prerequisites')
+        .select(
+          'subtopic_id, prerequisite:subtopics!subtopic_prerequisites_prerequisite_id_fkey(id, slug, title)',
+        )
+        .in('subtopic_id', ids)
+      if (error) throw error
+      const map = new Map<string, SubtopicRef[]>()
+      for (const row of data) {
+        if (!row.prerequisite) continue
+        map.set(row.subtopic_id, [...(map.get(row.subtopic_id) ?? []), row.prerequisite])
+      }
+      return map
+    },
+  })
+}
+
+/** Published videos per subtopic (RLS only returns published ones), explanation videos first. */
+export function usePublishedVideos(subtopicIds: readonly string[]) {
+  const ids = [...subtopicIds].sort()
+  return useQuery({
+    queryKey: keys.videos(ids),
+    enabled: ids.length > 0,
+    queryFn: async (): Promise<Map<string, VideoRef[]>> => {
+      const { data, error } = await supabase
+        .from('videos')
+        .select('subtopic_id, title, url, format, sort_order')
+        .in('subtopic_id', ids)
+        .eq('status', 'published')
+        .order('sort_order')
+      if (error) throw error
+      const map = new Map<string, VideoRef[]>()
+      const ordered = [...data].sort(
+        (a, b) => Number(a.format !== 'explainer') - Number(b.format !== 'explainer'),
+      )
+      for (const v of ordered) {
+        if (!v.url) continue
+        map.set(v.subtopic_id, [...(map.get(v.subtopic_id) ?? []), { title: v.title, url: v.url }])
+      }
+      return map
+    },
+  })
+}
+
 export function useSubtopic(slug: string) {
   return useQuery({
     queryKey: keys.subtopic(slug),
@@ -213,10 +268,11 @@ export const answerableTypes: ExerciseType[] = HANDWRITING_ENABLED
   : ['numeric', 'multiple_choice']
 
 export const EXERCISE_COLUMNS =
-  'id, type, prompt, diagram, presentation, exercise_placements(difficulty)' as const
+  'id, subtopic_id, type, prompt, diagram, presentation, exercise_placements(difficulty)' as const
 
 export function toPracticeExercise(e: {
   id: string
+  subtopic_id?: string
   type: ExerciseType
   prompt: string
   diagram: unknown
@@ -230,6 +286,7 @@ export function toPracticeExercise(e: {
     diagram: (e.diagram as Diagram | null) ?? null,
     presentation: (e.presentation ?? {}) as PracticeExercise['presentation'],
     difficulty: e.exercise_placements[0]?.difficulty ?? 'mittel',
+    subtopicId: e.subtopic_id,
   }
 }
 
