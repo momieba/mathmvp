@@ -308,6 +308,22 @@ describe('buildPrompt', () => {
     expect(p.system).not.toContain('Foto von Papier')
   })
 
+  it('anchors the rubric as grading basis for handwritten tasks only', () => {
+    const base = { prompt: 'Löse das LGS.', answer: { rubric: ['x = 2'] } }
+    const hw = buildPrompt({ ...base, type: 'handwritten', solution: { result: '$(2|3)$' } })
+    expect(hw.system).toContain('rubric')
+    expect(hw.system).toContain('ALLE Kriterien')
+    expect(hw.user).toContain('"rubric":["x = 2"]')
+    expect(hw.user).toContain('ERWARTETES ERGEBNIS')
+    expect(hw.user).toContain('$(2|3)$')
+    const noResult = buildPrompt({ ...base, type: 'handwritten', solution: {} })
+    expect(noResult.system).toContain('ALLE Kriterien')
+    expect(noResult.user).not.toContain('ERWARTETES ERGEBNIS')
+    const num = buildPrompt({ ...base, type: 'numeric', solution: { result: '5' } })
+    expect(num.system).not.toContain('rubric')
+    expect(num.user).not.toContain('ERWARTETES ERGEBNIS')
+  })
+
   it('adds photo rules only for photos', () => {
     const p = buildPrompt({
       type: 'numeric',
