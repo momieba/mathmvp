@@ -50,6 +50,7 @@ export function ExamTask({
 }) {
   const handwriting =
     HANDWRITING_ENABLED && (exercise.type === 'numeric' || exercise.type === 'handwritten')
+  const choice = !handwriting && exercise.type === 'multiple_choice'
   const multi = exercise.presentation.multi === true
   const canvasRef = useRef<HandwritingCanvasHandle>(null)
   const chain = useRef<Promise<unknown>>(Promise.resolve()) // saves in click order
@@ -127,72 +128,8 @@ export function ExamTask({
         {exercise.diagram && <DiagramView diagram={exercise.diagram} />}
       </div>
 
-      <GridPaper as="div" raised contentClassName={handwriting ? 'p-0' : 'py-4'}>
-        {handwriting ? (
-          <Tabs
-            value={mode}
-            onValueChange={(v) => setMode(v === 'photo' ? 'photo' : 'drawing')}
-            className="gap-0"
-          >
-            <div className="border-b p-2">
-              <TabsList aria-label="Wie gibst du deine Lösung ab?" className="h-auto">
-                <TabsTrigger value="drawing" className="min-h-11 px-4">
-                  <Pencil aria-hidden="true" />
-                  Zeichnen
-                </TabsTrigger>
-                <TabsTrigger value="photo" className="min-h-11 px-4">
-                  <Camera aria-hidden="true" />
-                  Foto
-                </TabsTrigger>
-              </TabsList>
-            </div>
-            <TabsContent value="drawing" keepMounted className="text-base">
-              <HandwritingCanvas
-                ref={canvasRef}
-                disabled={status === 'grading'}
-                onChange={(ink) => {
-                  setHasInk(ink)
-                  changed()
-                }}
-              />
-            </TabsContent>
-            <TabsContent value="photo" keepMounted className="text-base">
-              <PhotoInput
-                disabled={status === 'grading'}
-                onChange={(image) => {
-                  setPhoto(image)
-                  changed()
-                }}
-              />
-            </TabsContent>
-          </Tabs>
-        ) : exercise.type === 'numeric' ? (
-          <div className="flex flex-wrap items-center gap-3">
-            <Input
-              aria-label="Deine Antwort"
-              inputMode="decimal"
-              autoComplete="off"
-              placeholder="Deine Antwort"
-              className="bg-background max-w-48"
-              value={value}
-              onChange={(e) => {
-                setValue(e.target.value)
-                if (status === 'saved') onStatus('open')
-              }}
-            />
-            {exercise.presentation.unit && (
-              <span className="text-muted-foreground">{exercise.presentation.unit}</span>
-            )}
-            <Button
-              type="button"
-              variant="outline"
-              disabled={value.trim() === '' || status === 'saving'}
-              onClick={() => save({ value })}
-            >
-              Speichern
-            </Button>
-          </div>
-        ) : (
+      {choice ? (
+        <div>
           <fieldset className="grid gap-2 sm:grid-cols-2">
             <legend className="sr-only">Antwortmöglichkeiten</legend>
             {(exercise.presentation.options ?? []).map((option, i) => {
@@ -225,8 +162,76 @@ export function ExamTask({
               )
             })}
           </fieldset>
-        )}
-      </GridPaper>
+        </div>
+      ) : (
+        <GridPaper as="div" raised contentClassName={handwriting ? 'p-0' : 'py-4'}>
+          {handwriting ? (
+            <Tabs
+              value={mode}
+              onValueChange={(v) => setMode(v === 'photo' ? 'photo' : 'drawing')}
+              className="gap-0"
+            >
+              <div className="border-b p-2">
+                <TabsList aria-label="Wie gibst du deine Lösung ab?" className="h-auto">
+                  <TabsTrigger value="drawing" className="min-h-11 px-4">
+                    <Pencil aria-hidden="true" />
+                    Zeichnen
+                  </TabsTrigger>
+                  <TabsTrigger value="photo" className="min-h-11 px-4">
+                    <Camera aria-hidden="true" />
+                    Foto
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+              <TabsContent value="drawing" keepMounted className="text-base">
+                <HandwritingCanvas
+                  ref={canvasRef}
+                  disabled={status === 'grading'}
+                  onChange={(ink) => {
+                    setHasInk(ink)
+                    changed()
+                  }}
+                />
+              </TabsContent>
+              <TabsContent value="photo" keepMounted className="text-base">
+                <PhotoInput
+                  disabled={status === 'grading'}
+                  onChange={(image) => {
+                    setPhoto(image)
+                    changed()
+                  }}
+                />
+              </TabsContent>
+            </Tabs>
+          ) : exercise.type === 'numeric' ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <Input
+                aria-label="Deine Antwort"
+                inputMode="decimal"
+                autoComplete="off"
+                placeholder="Deine Antwort"
+                className="bg-background max-w-48"
+                value={value}
+                onChange={(e) => {
+                  setValue(e.target.value)
+                  if (status === 'saved') onStatus('open')
+                }}
+              />
+              {exercise.presentation.unit && (
+                <span className="text-muted-foreground">{exercise.presentation.unit}</span>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                disabled={value.trim() === '' || status === 'saving'}
+                onClick={() => save({ value })}
+              >
+                Speichern
+              </Button>
+            </div>
+          ) : null}
+        </GridPaper>
+      )}
 
       {handwriting && exercise.presentation.unit && (
         <p className="text-fine text-muted-foreground -mt-3">

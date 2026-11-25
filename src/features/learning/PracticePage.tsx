@@ -138,6 +138,7 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
   const [hints, setHints] = useState<string[]>([])
   const [noMoreHints, setNoMoreHints] = useState(false)
   const handwriting = HANDWRITING_ENABLED && isHandwritten(exercise)
+  const choice = !handwriting && exercise.type === 'multiple_choice'
   const graded = grade.data?.status === 'graded' ? grade.data : undefined
   const unreadable = grade.data?.status === 'unreadable' ? grade.data : undefined
   const result: Result | undefined = submit.data ?? graded
@@ -209,99 +210,9 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
         {exercise.diagram && <DiagramView diagram={exercise.diagram} />}
       </section>
 
-      {/* Antwortbereich: das Blatt mit Rand. Rechenaufgaben löst du auf der Zeichenfläche. */}
-      <GridPaper
-        as="section"
-        raised
-        aria-label="Antwortbereich"
-        margin={
-          <div role="status">
-            {grade.isPending ? (
-              <PendingNote />
-            ) : unreadable ? (
-              <UnreadableNote reason={unreadable.reason} photo={mode === 'photo'} />
-            ) : graded ? (
-              <HandwritingNotes result={graded} />
-            ) : submit.data ? (
-              <ResultNote result={submit.data} />
-            ) : null}
-          </div>
-        }
-        marginAt={handwriting ? 'lg' : 'md'}
-        marginClassName={
-          handwriting
-            ? 'max-lg:has-[[role=status]:empty]:hidden'
-            : 'max-md:has-[[role=status]:empty]:hidden'
-        }
-        contentClassName={handwriting ? 'p-0' : 'py-4'}
-      >
-        {handwriting ? (
-          <Tabs
-            value={mode}
-            onValueChange={(v) => {
-              setMode(v === 'photo' ? 'photo' : 'drawing')
-              if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
-            }}
-            className="gap-0"
-          >
-            <div className="border-b p-2">
-              <TabsList aria-label="Wie gibst du deine Lösung ab?" className="h-auto">
-                <TabsTrigger
-                  value="drawing"
-                  className="min-h-11 px-4"
-                  disabled={pending || !!graded}
-                >
-                  <Pencil aria-hidden="true" />
-                  Zeichnen
-                </TabsTrigger>
-                <TabsTrigger value="photo" className="min-h-11 px-4" disabled={pending || !!graded}>
-                  <Camera aria-hidden="true" />
-                  Foto
-                </TabsTrigger>
-              </TabsList>
-            </div>
-            {/* Both panels stay mounted so the drawing survives switching to the photo and back. */}
-            <TabsContent value="drawing" keepMounted className="text-base">
-              <HandwritingCanvas
-                ref={canvasRef}
-                disabled={grade.isPending}
-                readOnly={!!graded}
-                marks={graded && mode === 'drawing' ? marksOf(graded.steps) : undefined}
-                onChange={(ink) => {
-                  setHasInk(ink)
-                  if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
-                }}
-              />
-            </TabsContent>
-            <TabsContent value="photo" keepMounted className="text-base">
-              <PhotoInput
-                key={photoKey}
-                disabled={pending || !!graded}
-                marks={graded && mode === 'photo' ? marksOf(graded.steps) : undefined}
-                onChange={(image) => {
-                  setPhoto(image)
-                  if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
-                }}
-              />
-            </TabsContent>
-          </Tabs>
-        ) : exercise.type === 'numeric' ? (
-          <div className="flex items-center gap-3">
-            <Input
-              aria-label="Deine Antwort"
-              inputMode="decimal"
-              autoComplete="off"
-              placeholder="Deine Antwort"
-              className="bg-background disabled:bg-background dark:bg-background dark:disabled:bg-background max-w-48 disabled:opacity-100"
-              value={value}
-              disabled={!!result}
-              onChange={(e) => setValue(e.target.value)}
-            />
-            {exercise.presentation.unit && (
-              <span className="text-muted-foreground">{exercise.presentation.unit}</span>
-            )}
-          </div>
-        ) : (
+      {/* Auswahlaufgabe: nichts zu schreiben, darum kein Blatt. Rechenaufgaben löst du auf dem Blatt mit Rand. */}
+      {choice ? (
+        <section aria-label="Antwortbereich" className="flex flex-col gap-4">
           <fieldset className="grid gap-2 sm:grid-cols-2">
             <legend className="sr-only">Antwortmöglichkeiten</legend>
             {(exercise.presentation.options ?? []).map((option, i) => {
@@ -340,8 +251,109 @@ function ExerciseCard({ exercise, onNext }: { exercise: PracticeExercise; onNext
               )
             })}
           </fieldset>
-        )}
-      </GridPaper>
+          <div role="status" className="empty:hidden">
+            {submit.data ? <ResultNote result={submit.data} /> : null}
+          </div>
+        </section>
+      ) : (
+        <GridPaper
+          as="section"
+          raised
+          aria-label="Antwortbereich"
+          margin={
+            <div role="status">
+              {grade.isPending ? (
+                <PendingNote />
+              ) : unreadable ? (
+                <UnreadableNote reason={unreadable.reason} photo={mode === 'photo'} />
+              ) : graded ? (
+                <HandwritingNotes result={graded} />
+              ) : submit.data ? (
+                <ResultNote result={submit.data} />
+              ) : null}
+            </div>
+          }
+          marginAt={handwriting ? 'lg' : 'md'}
+          marginClassName={
+            handwriting
+              ? 'max-lg:has-[[role=status]:empty]:hidden'
+              : 'max-md:has-[[role=status]:empty]:hidden'
+          }
+          contentClassName={handwriting ? 'p-0' : 'py-4'}
+        >
+          {handwriting ? (
+            <Tabs
+              value={mode}
+              onValueChange={(v) => {
+                setMode(v === 'photo' ? 'photo' : 'drawing')
+                if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
+              }}
+              className="gap-0"
+            >
+              <div className="border-b p-2">
+                <TabsList aria-label="Wie gibst du deine Lösung ab?" className="h-auto">
+                  <TabsTrigger
+                    value="drawing"
+                    className="min-h-11 px-4"
+                    disabled={pending || !!graded}
+                  >
+                    <Pencil aria-hidden="true" />
+                    Zeichnen
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="photo"
+                    className="min-h-11 px-4"
+                    disabled={pending || !!graded}
+                  >
+                    <Camera aria-hidden="true" />
+                    Foto
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+              {/* Both panels stay mounted so the drawing survives switching to the photo and back. */}
+              <TabsContent value="drawing" keepMounted className="text-base">
+                <HandwritingCanvas
+                  ref={canvasRef}
+                  disabled={grade.isPending}
+                  readOnly={!!graded}
+                  marks={graded && mode === 'drawing' ? marksOf(graded.steps) : undefined}
+                  onChange={(ink) => {
+                    setHasInk(ink)
+                    if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
+                  }}
+                />
+              </TabsContent>
+              <TabsContent value="photo" keepMounted className="text-base">
+                <PhotoInput
+                  key={photoKey}
+                  disabled={pending || !!graded}
+                  marks={graded && mode === 'photo' ? marksOf(graded.steps) : undefined}
+                  onChange={(image) => {
+                    setPhoto(image)
+                    if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
+                  }}
+                />
+              </TabsContent>
+            </Tabs>
+          ) : exercise.type === 'numeric' ? (
+            <div className="flex items-center gap-3">
+              <Input
+                aria-label="Deine Antwort"
+                inputMode="decimal"
+                autoComplete="off"
+                placeholder="Deine Antwort"
+                className="bg-background disabled:bg-background dark:bg-background dark:disabled:bg-background max-w-48 disabled:opacity-100"
+                value={value}
+                disabled={!!result}
+                onChange={(e) => setValue(e.target.value)}
+              />
+              {exercise.presentation.unit && (
+                <span className="text-muted-foreground">{exercise.presentation.unit}</span>
+              )}
+            </div>
+          ) : null}
+        </GridPaper>
+      )}
 
       {handwriting && !result && (
         <div className="text-fine text-muted-foreground -mt-3 space-y-1">

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import type { HandwritingResult, PracticeExercise } from './api'
 import { decodeErrorMessage, ImageError, prepareImage } from './image'
@@ -9,12 +9,13 @@ let exercise: PracticeExercise
 let gradeState: { data?: HandwritingResult; isPending: boolean; error: Error | null }
 const mutate = vi.fn()
 const reset = vi.fn()
+let submitData: unknown
 
 vi.mock('./api', () => ({
   useSubtopic: () => ({ isPending: false, data: { id: 's1', title: 'Hypotenuse berechnen' } }),
   usePracticeExercises: () => ({ isPending: false, data: [exercise] }),
   useProgress: () => ({ data: new Map() }),
-  useSubmitAnswer: () => ({ mutate: vi.fn(), isPending: false, data: undefined, error: null }),
+  useSubmitAnswer: () => ({ mutate: vi.fn(), isPending: false, data: submitData, error: null }),
   useGradeHandwriting: () => ({ ...gradeState, mutate, reset }),
   fetchHint: vi.fn(),
 }))
@@ -102,6 +103,7 @@ beforeEach(() => {
   gradeState = { isPending: false, error: null }
   mutate.mockClear()
   reset.mockClear()
+  submitData = undefined
 })
 
 describe('PracticePage with handwriting', () => {
@@ -122,6 +124,29 @@ describe('PracticePage with handwriting', () => {
     renderPage()
     expect(screen.queryByTestId('canvas')).not.toBeInTheDocument()
     expect(screen.getAllByRole('radio')).toHaveLength(2)
+  })
+
+  it('shows no paper or margin behind multiple choice options, but still the result note', () => {
+    exercise = {
+      ...numeric,
+      type: 'multiple_choice',
+      presentation: { options: ['3', '5'], multi: false },
+    }
+    submitData = {
+      correct: false,
+      answer: { correct: [1] },
+      solution: { steps: [{ text: 'Rechne.' }], result: '5' },
+    }
+    renderPage()
+    const area = screen.getByRole('region', { name: 'Antwortbereich' })
+    expect(area).not.toHaveClass('grid-paper')
+    expect(area.closest('.grid-paper')).toBeNull()
+    expect(within(area).getByRole('status')).toHaveTextContent('Nicht ganz.')
+  })
+
+  it('keeps the paper for numeric tasks', () => {
+    renderPage()
+    expect(screen.getByRole('region', { name: 'Antwortbereich' })).toHaveClass('grid-paper')
   })
 
   it('submits the drawing once something is written', () => {
