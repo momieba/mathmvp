@@ -3,6 +3,7 @@
  *
  * Usage:
  *   npm run content:import -- --curriculum                         # all drafts/curriculum/*.json
+ *   npm run content:import -- --skills                             # all drafts/skills/*.json (after curriculum)
  *   npm run content:import -- --exercises <file.json> [...] [--publish]
  *   add --dry-run to validate and print what would happen
  *
@@ -17,6 +18,7 @@ import { z } from 'zod'
 import { curriculumDraftSchema, type Topic } from '../src/features/curriculum/schema'
 import { buildPresentation } from '../src/features/exercises/presentation'
 import { exerciseDraftFileSchema, type Exercise } from '../src/features/exercises/schema'
+import { skillCatalogSchema, type Skill } from '../src/features/skills/schema'
 import type { Database, Json } from '../src/types/database'
 
 // --- args & env ----------------------------------------------------------------------------
@@ -25,9 +27,9 @@ const has = (f: string) => args.includes(f)
 const dryRun = has('--dry-run')
 const publish = has('--publish')
 const exerciseFiles = args.filter((a) => a.endsWith('.json'))
-if (!has('--curriculum') && exerciseFiles.length === 0) {
+if (!has('--curriculum') && !has('--skills') && exerciseFiles.length === 0) {
   console.error(
-    'Usage: npm run content:import -- [--curriculum] [--exercises <file.json> ...] [--publish] [--dry-run]',
+    'Usage: npm run content:import -- [--curriculum] [--skills] [--exercises <file.json> ...] [--publish] [--dry-run]',
   )
   process.exit(1)
 }
@@ -182,6 +184,71 @@ async function importCurriculum() {
   console.log('curriculum imported')
 }
 
+// --- skills --------------------------------------------------------------------------------
+async function importSkills() {
+  const dir = join('drafts', 'skills')
+  const files = readdirSync(dir)
+    .filter((f) => f.endsWith('.json'))
+    .sort()
+  const skills: Skill[] = files.flatMap((f) => readJson(join(dir, f), skillCatalogSchema).skills)
+  const dupes = skills.map((s) => s.slug).filter((s, i, all) => all.indexOf(s) !== i)
+  if (dupes.length) throw new Error(`skill slugs defined twice: ${[...new Set(dupes)].join(', ')}`)
+  const slugs = new Set(skills.map((s) => s.slug))
+  const orphans = skills.filter((s) => s.parent && !slugs.has(s.parent))
+  if (orphans.length)
+    throw new Error(`unknown parents: ${orphans.map((s) => `${s.slug} → ${s.parent}`).join(', ')}`)
+  console.log(`skills: ${files.length} files, ${skills.length} skills`)
+  if (!db) return
+
+  // Skills never get deleted here (student data will refer to them) – removed ones stay.
+  const rows = check(
+    'skills',
+    await db
+      .from('skills')
+      .upsert(
+        skills.map((s, i) => ({
+          slug: s.slug,
+          title: s.title,
+          description: s.description,
+          category: s.category,
+          grade_from: s.gradeFrom,
+          sort_order: i,
+        })),
+        { onConflict: 'slug' },
+      )
+      .select('id, slug'),
+  )
+  const skillId = new Map(rows.map((r) => [r.slug, r.id]))
+  for (const s of skills) {
+    check(
+      `parent ${s.slug}`,
+      await db
+        .from('skills')
+        .update({ parent_id: s.parent ? skillId.get(s.parent)! : null })
+        .eq('id', skillId.get(s.slug)!),
+    )
+  }
+
+  const subtopicId = new Map(
+    check('subtopic ids', await db.from('subtopics').select('id, slug')).map((s) => [s.slug, s.id]),
+  )
+  const unresolved = new Set<string>()
+  for (const s of skills) {
+    const id = skillId.get(s.slug)!
+    check('delete homes', await db.from('skill_home_subtopics').delete().eq('skill_id', id))
+    const homes = s.homeSubtopics.flatMap((slug) => {
+      const sid = subtopicId.get(slug)
+      if (!sid) unresolved.add(slug)
+      return sid ? [{ skill_id: id, subtopic_id: sid }] : []
+    })
+    if (homes.length) check(`homes ${s.slug}`, await db.from('skill_home_subtopics').insert(homes))
+  }
+  if (unresolved.size) {
+    console.warn(`home subtopics not found (yet): ${[...unresolved].sort().join(', ')}`)
+  }
+  console.log('skills imported')
+}
+
 // --- exercises -----------------------------------------------------------------------------
 async function importExercises(file: string) {
   const exercises: Exercise[] = readJson(file, exerciseDraftFileSchema).exercises
@@ -249,5 +316,6 @@ async function importExercises(file: string) {
 }
 
 if (has('--curriculum')) await importCurriculum()
+if (has('--skills')) await importSkills()
 for (const f of exerciseFiles) await importExercises(f)
 if (dryRun) console.log('dry run – nothing written')

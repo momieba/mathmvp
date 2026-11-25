@@ -359,6 +359,83 @@ export type Database = {
         }
         Relationships: []
       }
+      skill_home_subtopics: {
+        Row: {
+          skill_id: string
+          subtopic_id: string
+        }
+        Insert: {
+          skill_id: string
+          subtopic_id: string
+        }
+        Update: {
+          skill_id?: string
+          subtopic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_home_subtopics_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_home_subtopics_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "subtopics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skills: {
+        Row: {
+          category: Database["public"]["Enums"]["skill_category"]
+          created_at: string
+          description: string
+          grade_from: number
+          id: string
+          parent_id: string | null
+          slug: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["skill_category"]
+          created_at?: string
+          description: string
+          grade_from: number
+          id?: string
+          parent_id?: string | null
+          slug: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["skill_category"]
+          created_at?: string
+          description?: string
+          grade_from?: number
+          id?: string
+          parent_id?: string | null
+          slug?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skills_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_topics: {
         Row: {
           added_at: string
@@ -665,6 +742,13 @@ export type Database = {
         | "oberschule"
         | "sekundarschule"
         | "stadtteilschule"
+      skill_category:
+        | "arithmetik"
+        | "algebra"
+        | "geometrie"
+        | "funktionen"
+        | "stochastik"
+        | "allgemein"
       state_code:
         | "BW"
         | "BY"
@@ -837,6 +921,14 @@ export const Constants = {
         "oberschule",
         "sekundarschule",
         "stadtteilschule",
+      ],
+      skill_category: [
+        "arithmetik",
+        "algebra",
+        "geometrie",
+        "funktionen",
+        "stochastik",
+        "allgemein",
       ],
       state_code: [
         "BW",

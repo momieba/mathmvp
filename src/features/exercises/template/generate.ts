@@ -1,6 +1,6 @@
 import { all, create } from 'mathjs'
 import { exerciseDraftFileSchema, type Exercise } from '../schema'
-import { renderText, singlePlaceholder } from './format'
+import { renderText, singlePlaceholder, texFraction, texNumber, texSigned } from './format'
 import { exerciseTemplateSchema, type ExerciseTemplate, type TemplateLevel } from './schema'
 
 // Restricted mathjs instance: templates may compute, but not redefine the parser or units.
@@ -9,6 +9,17 @@ const evaluateExpr = math.evaluate.bind(math)
 const blocked = () => {
   throw new Error('function disabled in templates')
 }
+// Text helpers for placeholders (return LaTeX strings): tex(2.5) → "2{,}5", frac(8/3) → "\frac{8}{3}",
+// signed(-3) → "- 3" (for building terms like "x {{signed(b)}}").
+math.import(
+  {
+    tex: (x: number) => texNumber(x),
+    frac: (x: number) => texFraction(x),
+    signed: (x: number) => texSigned(x),
+  },
+  { override: true },
+)
+
 math.import(
   {
     import: blocked,
@@ -22,7 +33,6 @@ math.import(
   },
   { override: true },
 )
-
 type Scope = Record<string, unknown>
 
 /** Deterministic PRNG (mulberry32) so the same seed always yields the same exercises. */
@@ -199,6 +209,9 @@ function buildAnswer(
       type: 'numeric' as const,
       answer: { value: clean(value), tolerance: clean(tolerance), unit: answer.unit },
     }
+  }
+  if (answer.type === 'handwritten') {
+    return { type: 'handwritten' as const, answer: { rubric: answer.rubric.map(render) } }
   }
   const correct = render(answer.correct)
   const distractors = answer.distractors.map(render)

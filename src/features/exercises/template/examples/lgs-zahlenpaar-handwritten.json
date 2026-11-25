@@ -1,0 +1,100 @@
+{
+  "id": "lgs-zahlenpaar-handwritten",
+  "subtopic": "lgs-additionsverfahren",
+  "placements": [{ "state": "NW", "schoolType": "gymnasium", "grade": 8 }],
+  "params": {
+    "x": { "min": -4, "max": 5, "step": 1 },
+    "y": { "min": -4, "max": 5, "step": 1 }
+  },
+  "derived": {
+    "det": "a1 * b2 - a2 * b1",
+    "c1": "a1 * x + b1 * y",
+    "c2": "a2 * x + b2 * y",
+    "xs": "(c1 * b2 - c2 * b1) / det",
+    "ys": "(a1 * c2 - a2 * c1) / det"
+  },
+  "constraints": ["det != 0", "x != y"],
+  "checks": [
+    "a1 * xs + b1 * ys == c1",
+    "a2 * xs + b2 * ys == c2",
+    "abs(xs - x) < 1e-9 and abs(ys - y) < 1e-9"
+  ],
+  "levels": [
+    {
+      "id": "kleine-koeffizienten",
+      "difficulty": "leicht",
+      "count": 6,
+      "params": {
+        "a1": { "values": [2, 3] },
+        "b1": { "values": [-3, -2, 2, 3] },
+        "a2": { "values": [2, 3, 4] },
+        "b2": { "values": [-4, -3, -2, 2, 3] }
+      },
+      "contexts": [
+        {
+          "id": "zahlenpaar",
+          "prompt": "Löse das Gleichungssystem und gib das Lösungspaar $(x\\,|\\,y)$ an.\n\n$$\\begin{aligned} \\text{I:}\\quad & {{a1}}x {{signed(b1)}}y = {{c1}} \\\\ \\text{II:}\\quad & {{a2}}x {{signed(b2)}}y = {{c2}} \\end{aligned}$$"
+        },
+        {
+          "id": "mit-probe",
+          "prompt": "Bestimme die Lösung des Systems und mache die Probe in beiden Gleichungen.\n\n$$\\begin{aligned} \\text{I:}\\quad & {{a1}}x {{signed(b1)}}y = {{c1}} \\\\ \\text{II:}\\quad & {{a2}}x {{signed(b2)}}y = {{c2}} \\end{aligned}$$"
+        }
+      ],
+      "answer": {
+        "type": "handwritten",
+        "rubric": [
+          "Ein Verfahren (Addition, Einsetzen oder Gleichsetzen) wird korrekt angewendet.",
+          "Es ergibt sich $x = {{x}}$.",
+          "Es ergibt sich $y = {{y}}$.",
+          "Das Ergebnis wird als Lösungspaar $({{x}}\\,|\\,{{y}})$ angegeben; eine Probe in beiden Gleichungen stimmt."
+        ]
+      },
+      "solution": {
+        "steps": [
+          "Eine Variable eliminieren, z. B. durch Multiplizieren der Gleichungen mit passenden Faktoren und anschließendes Addieren oder Subtrahieren.",
+          "Die Lösung der entstandenen Gleichung ergibt $x = {{x}}$.",
+          "Einsetzen in Gleichung I: ${{a1}} \\cdot {{x}} {{signed(b1)}} y = {{c1}}$ ergibt $y = {{y}}$.",
+          "Probe in II: ${{a2}} \\cdot ({{x}}) {{signed(b2)}} \\cdot ({{y}}) = {{c2}}$ stimmt."
+        ],
+        "result": "$({{x}}\\,|\\,{{y}})$"
+      },
+      "hints": [
+        "Multipliziere eine Gleichung so, dass bei $x$ oder $y$ gegensätzliche oder gleiche Koeffizienten stehen.",
+        "Setze den gefundenen Wert in eine der Ausgangsgleichungen ein, um die zweite Variable zu bestimmen."
+      ]
+    },
+    {
+      "id": "groessere-koeffizienten",
+      "difficulty": "mittel",
+      "count": 4,
+      "params": {
+        "a1": { "values": [3, 5, 7] },
+        "b1": { "values": [-5, -3, 3, 5] },
+        "a2": { "values": [2, 4, 6] },
+        "b2": { "values": [-7, -5, -3, 3, 5, 7] }
+      },
+      "contexts": [
+        {
+          "id": "zahlenpaar",
+          "prompt": "Löse das Gleichungssystem mit einem Verfahren deiner Wahl. Gib das Lösungspaar an.\n\n$$\\begin{aligned} \\text{I:}\\quad & {{a1}}x {{signed(b1)}}y = {{c1}} \\\\ \\text{II:}\\quad & {{a2}}x {{signed(b2)}}y = {{c2}} \\end{aligned}$$"
+        }
+      ],
+      "answer": {
+        "type": "handwritten",
+        "rubric": [
+          "Ein Verfahren wird korrekt angewendet (Zwischenschritte nachvollziehbar).",
+          "Es ergibt sich $x = {{x}}$ und $y = {{y}}$.",
+          "Das Lösungspaar $({{x}}\\,|\\,{{y}})$ ist angegeben."
+        ]
+      },
+      "solution": {
+        "steps": [
+          "Gleichungen so erweitern, dass eine Variable beim Addieren oder Subtrahieren wegfällt.",
+          "Die verbleibende Gleichung ergibt $x = {{x}}$.",
+          "Einsetzen in Gleichung I ergibt $y = {{y}}$."
+        ],
+        "result": "$({{x}}\\,|\\,{{y}})$"
+      }
+    }
+  ]
+}

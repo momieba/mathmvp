@@ -7,6 +7,7 @@ import { join, sep } from 'node:path'
 import { z } from 'zod'
 import { curriculumDraftSchema } from '../src/features/curriculum/schema'
 import { exerciseDraftFileSchema } from '../src/features/exercises/schema'
+import { skillCatalogSchema } from '../src/features/skills/schema'
 
 function collect(path: string): string[] {
   if (statSync(path).isDirectory()) return readdirSync(path).flatMap((f) => collect(join(path, f)))
@@ -18,6 +19,7 @@ function schemaFor(file: string) {
     return curriculumDraftSchema
   if (file.includes(`${sep}exercises${sep}`) || file.includes('/exercises/'))
     return exerciseDraftFileSchema
+  if (file.includes(`${sep}skills${sep}`) || file.includes('/skills/')) return skillCatalogSchema
   return null
 }
 
@@ -28,7 +30,7 @@ let failed = 0
 for (const file of files) {
   const schema = schemaFor(file)
   if (!schema) {
-    console.warn(`SKIP  ${file} (not under curriculum/ or exercises/)`)
+    console.warn(`SKIP  ${file} (not under curriculum/, exercises/ or skills/)`)
     continue
   }
   let data: unknown

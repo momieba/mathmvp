@@ -4,6 +4,7 @@ import {
   difficultySchema,
   exerciseTypeSchema,
   learningStageSchema,
+  skillCategorySchema,
   videoFormatSchema,
   videoStatusSchema,
 } from './enums'
@@ -22,6 +23,7 @@ const checks: true[] = [
   true satisfies Same<DbEnums['learning_stage'], Values<typeof learningStageSchema>>,
   true satisfies Same<DbEnums['video_format'], Values<typeof videoFormatSchema>>,
   true satisfies Same<DbEnums['video_status'], Values<typeof videoStatusSchema>>,
+  true satisfies Same<DbEnums['skill_category'], Values<typeof skillCategorySchema>>,
 ]
 
 describe('content enums', () => {

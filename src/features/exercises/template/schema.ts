@@ -37,9 +37,19 @@ const multipleChoiceAnswer = z.object({
   distractors: z.array(text).min(1).max(5),
 })
 
+const handwrittenAnswer = z.object({
+  type: z.literal('handwritten'),
+  /**
+   * Grading criteria (text templates, e.g. "Lösungspaar $(x\\,|\\,y) = ({{x}}\\,|\\,{{y}})$"). The expected
+   * result goes into `solution.result`; the edge function grades against rubric + model solution.
+   */
+  rubric: z.array(text).min(1),
+})
+
 export const templateAnswerSchema = z.discriminatedUnion('type', [
   numericAnswer,
   multipleChoiceAnswer,
+  handwrittenAnswer,
 ])
 
 /** Phrasing variant of a level; contexts are used round-robin for variety. */

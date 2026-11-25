@@ -12,7 +12,7 @@ npx vitest run src/features/exercises/schema.test.ts   # einzelne Testdatei
 npm run typecheck && npm run lint && npm run format:check   # vor jedem Commit
 npm run drafts:validate [-- <datei|ordner>]   # Entwürfe gegen Zod-Schema prüfen
 npm run exercises:generate -- <vorlage.json> [--seed N] [--force]   # Aufgaben aus Vorlage erzeugen
-npm run content:import -- --curriculum | <aufgaben.json …> [--publish] [--dry-run]   # Entwürfe → Supabase (Service-Role-Key in .env.local)
+npm run content:import -- --curriculum | --skills | <aufgaben.json …> [--publish] [--dry-run]   # Entwürfe → Supabase (Service-Role-Key in .env.local)
 npm run db:new <name> | db:push | db:types    # Supabase, siehe Skill supabase-migration
 ```
 
@@ -23,6 +23,7 @@ npm run db:new <name> | db:push | db:types    # Supabase, siehe Skill supabase-m
 - `src/features/exercises/schema.ts` und `src/features/curriculum/schema.ts` sind die **einzige Quelle** für das Aufgaben- und Themenformat – genutzt von App, Validierungs-Script, Import und Agenten. Format ändern = dort ändern.
 - Datenmodell (Lernplan): Themen/Subthemen global. Subthemen bilden pro Thema einen Lernpfad (`sort_order` + Stufe `einstieg → grundlagen → vertiefung → anwendung`) mit Lernzielen, Voraussetzungen (`subtopic_prerequisites`, auch themenübergreifend), Aufgabenplan (`exercise_plan`, **mind. 20 Aufgaben**) und geplanten Videos (`videos`, Status `planned → produced → published`). Einordnung `(Bundesland, Schulform, Klasse)` **pro Subthema**; Schwierigkeit pro Aufgaben-Placement. Referenzbeispiel: `src/features/curriculum/example-draft.ts`.
 - Gemeinsame Inhalts-Enums in `src/features/content/enums.ts`.
+- **Skill-Modell** (Plan: `docs/specs/2026-11-25-skill-modell-und-wiederholung.md`, lokal): Basis-Skills (übergreifende Fertigkeiten wie Bruchrechnung) in `src/features/skills/schema.ts` → `drafts/skills/catalog.json` → Tabellen `skills` + `skill_home_subtopics` (Heimat-Subthema = Ziel der Wiederholungs-Empfehlung). Skill-Slugs nie umbenennen/löschen (verfeinern über `parent`). Schüler sehen Skills vorerst **nicht** (erst nach Validierung). Wiederholungs-Empfehlungen auf Subthema-Basis: `learning/recommendations.ts` (Regeln dort).
 - Diagramme werden als Daten gespeichert (`diagramSchema`), nicht als Bilder.
 - Auth: Google OAuth + E-Mail-OTP (6-stelliger Code, PKCE). Kein Passwort-Login. **Aktuell deaktiviert** (`AUTH_ENABLED = false` in `src/features/auth/config.ts`): Beim Betreten von `/app`/`/profil` meldet `RequireAuth` anonym an (Supabase „anonymous sign-ins“ muss aktiv sein), Landing und Rechtsseiten lösen keine Anmeldung aus. Anonyme Nutzer haben die Rolle `authenticated` → RLS gilt unverändert. Rückbau: siehe `docs/TODO.md`.
 - Routen: öffentlich `/`, `/impressum`, `/datenschutz`, `/login`; mit Login `/profil` (Onboarding + Profil bearbeiten); mit Login **und** fertigem Profil `/app` (Dashboard: Themensuche, „Meine Themen“ als Kacheln), `/app/thema/:slug` (Themenseite: Abschnitte, Prüfung, Entfernen), `/app/thema/:slug/pruefung[/:sessionId]` (Prüfung bzw. Ergebnis) und `/app/ueben/:subtopicSlug` (Übungsseite) (`RequireAuth` → `RequireProfile`).
@@ -39,17 +40,18 @@ npm run db:new <name> | db:push | db:types    # Supabase, siehe Skill supabase-m
 
 ```
 curriculum-researcher → drafts/curriculum/*.json   (Lernplan: Themen, Subthemen, Einordnung, Videos, Aufgabenplan)
+                      → drafts/skills/catalog.json  (Basis-Skills)
 exercise-author       → drafts/templates/*.json → exercises:generate → drafts/exercises/*.json
                         (bevorzugt Vorlage + Generator; Handarbeit für handwritten/Begründungen/komplexe Sachaufgaben)
 create-math-video/-short → Videos aus dem Video-Plan (keyPoints)
 math-checker          → Bericht (FREIGEGEBEN / NICHT FREIGEGEBEN)
-content:import        → Supabase (erst --curriculum, dann Aufgaben; --publish nur nach FREIGEGEBEN)
+content:import        → Supabase (erst --curriculum, dann --skills, dann Aufgaben; --publish nur nach FREIGEGEBEN)
 Admin-Ansicht         → review → published → archived (noch nicht gebaut – bis dahin direkt --publish)
 ```
 
 - Aufgaben werden nie gelöscht, nur archiviert (Schülerantworten referenzieren sie).
 - Eigene Aufgaben nach Vorbild von Schulbuchaufgaben – **nie übernehmen**, Regeln in `.claude/agents/exercise-author.md`.
-- Generator (`src/features/exercises/template/`): deklarative JSON-Vorlagen (mathjs-Ausdrücke, kein ausführbarer Agent-Code; Parser-Funktionen gesperrt), deterministisch pro Seed, erzeugt das **normale Entwurfsformat** – Rest der Pipeline unverändert. Unterstützt aktuell `numeric` und `multiple_choice`. Muster: `template/examples/pythagoras-hypotenuse-berechnen.json`. Ziel aktuell: 20 Aufgaben pro Subthema, gespeichert in der DB (keine Live-Generierung).
+- Generator (`src/features/exercises/template/`): deklarative JSON-Vorlagen (mathjs-Ausdrücke, kein ausführbarer Agent-Code; Parser-Funktionen gesperrt), deterministisch pro Seed, erzeugt das **normale Entwurfsformat** – Rest der Pipeline unverändert. Unterstützt `numeric` (Brüche + Toleranz), `multiple_choice` und `handwritten` (`rubric` mit Platzhaltern, erwartetes Ergebnis in `solution.result`); LaTeX-Helfer `frac()`, `tex()`, `signed()` in Platzhaltern. Muster: `template/examples/pythagoras-hypotenuse-berechnen.json`, `template/examples/lgs-zahlenpaar-handwritten.json`. Stufen-Typ ändern + `--force` hält die Keys stabil, solange Anzahl/Reihenfolge der Stufen gleich bleiben. Ziel aktuell: 20 Aufgaben pro Subthema, gespeichert in der DB (keine Live-Generierung).
 - Beim Überschreiben einer Generator-Datei (`--force`) bleiben die Keys gleich; Keys anderer Dateien desselben Subthemas werden fortgezählt.
 
 ## Agenten & Abläufe

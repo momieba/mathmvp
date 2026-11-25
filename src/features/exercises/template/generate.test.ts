@@ -1,6 +1,8 @@
 import katex from 'katex'
 import pilot from './examples/pythagoras-hypotenuse-berechnen.json'
+import lgs from './examples/lgs-zahlenpaar-handwritten.json'
 import { generateExercises } from './generate'
+import { texFraction, texSigned } from './format'
 
 const MATH = /\$\$([\s\S]+?)\$\$|\$([^$]+?)\$/g
 
@@ -144,5 +146,150 @@ describe('generateExercises – template errors', () => {
     const evil = structuredClone(minimal)
     evil.levels[0]!.answer.value = 'evaluate("1+1")'
     expect(() => generateExercises(evil)).toThrow(/disabled/)
+  })
+})
+
+describe('generateExercises – handwritten example (LGS, Lösungspaar)', () => {
+  const exercises = generateExercises(lgs)
+
+  it('produces schema-valid handwritten exercises with rubric and result', () => {
+    expect(exercises).toHaveLength(10)
+    for (const e of exercises) {
+      expect(e.type).toBe('handwritten')
+      if (e.type !== 'handwritten') continue
+      expect(e.answer.rubric.length).toBeGreaterThanOrEqual(3)
+      expect(e.answer.rubric.join(' ')).not.toContain('{{')
+      expect(e.solution.result).toMatch(/^\$\(-?\d+\\,\|\\,-?\d+\)\$$/)
+    }
+  })
+
+  it('states a solution pair that satisfies both equations of the prompt', () => {
+    for (const e of exercises) {
+      const eq = [...e.prompt.matchAll(/& (-?\d+)x ([+-]) (\d+)y = (-?\d+)/g)]
+      expect(eq).toHaveLength(2)
+      const [x, y] = [...e.solution.result.matchAll(/-?\d+/g)].map((m) => Number(m[0]))
+      for (const [, a, s, b, c] of eq) {
+        expect(Number(a) * x! + (s === '-' ? -1 : 1) * Number(b) * y!).toBe(Number(c))
+      }
+    }
+  })
+
+  it('is deterministic per seed and varies across seeds', () => {
+    expect(generateExercises(lgs)).toEqual(exercises)
+    expect(generateExercises(lgs, { seed: 5 }).map((e) => e.prompt)).not.toEqual(
+      exercises.map((e) => e.prompt),
+    )
+  })
+
+  it('renders every LaTeX fragment without KaTeX errors', () => {
+    for (const e of exercises) {
+      const texts = [
+        e.prompt,
+        ...e.solution.steps.map((s) => s.text),
+        e.solution.result,
+        ...(e.hints ?? []),
+        ...(e.type === 'handwritten' ? e.answer.rubric : []),
+      ]
+      for (const t of texts) {
+        for (const m of t.matchAll(MATH)) {
+          expect(() => katex.renderToString(m[1] ?? m[2]!, { throwOnError: true })).not.toThrow()
+        }
+      }
+    }
+  })
+
+  it('aborts when the template is wrong (check fails)', () => {
+    const wrongC = structuredClone(lgs)
+    wrongC.derived.c2 = 'a2 * x + b2 * y + 1'
+    expect(() => generateExercises(wrongC)).toThrow(/template check failed/)
+  })
+})
+
+describe('generateExercises – numeric with fraction result', () => {
+  const slope = {
+    id: 'slope',
+    subtopic: 'slope',
+    placements: [{ state: 'NW', schoolType: 'gymnasium', grade: 8 }],
+    checks: ['abs(m * dx - dy) < 1e-9'],
+    levels: [
+      {
+        id: 'bruch',
+        difficulty: 'mittel',
+        count: 1,
+        params: { dx: { values: [3] }, dy: { values: [8] } },
+        derived: { m: 'dy / dx' },
+        contexts: [{ id: 'c', prompt: 'Steigung bei $\\Delta x = {{dx}}$, $\\Delta y = {{dy}}$?' }],
+        answer: { type: 'numeric', value: 'm', tolerance: '0.005' },
+        solution: {
+          steps: ['$m = \\frac{ {{dy}} }{ {{dx}} }$'],
+          result: '$m = {{frac(m)}} \\approx {{m:2}}$',
+        },
+      },
+    ],
+  }
+
+  it('keeps the exact value with tolerance and shows the fraction in the model solution', () => {
+    const [e] = generateExercises(slope)
+    // stored value is rounded to 9 decimals (float-noise cleanup) – far below the tolerance
+    expect(e).toMatchObject({ type: 'numeric', answer: { tolerance: 0.005 } })
+    expect(e!.type === 'numeric' && e!.answer.value).toBeCloseTo(8 / 3, 8)
+    expect(e!.solution.result).toBe('$m = \\frac{8}{3} \\approx 2{,}67$')
+  })
+
+  it('formats negative and integer fractions', () => {
+    expect(texFraction(-2 / 3)).toBe('-\\frac{2}{3}')
+    expect(texFraction(6 / 3)).toBe('2')
+    expect(texFraction(0.375)).toBe('\\frac{3}{8}')
+    expect(texSigned(-3)).toBe('- 3')
+    expect(texSigned(2.5)).toBe('+ 2{,}5')
+    expect(() => texFraction(Math.PI)).toThrow()
+  })
+})
+
+describe('generateExercises – keys stay stable when a level changes type (--force)', () => {
+  const base = {
+    id: 'mix',
+    subtopic: 'mix',
+    placements: [{ state: 'NW', schoolType: 'gymnasium', grade: 8 }],
+    checks: ['a > 0'],
+    levels: [
+      {
+        id: 'l1',
+        difficulty: 'leicht',
+        count: 3,
+        params: { a: { min: 1, max: 9, step: 1 } },
+        contexts: [{ id: 'c', prompt: 'Berechne $2 \\cdot {{a}}$.' }],
+        answer: { type: 'multiple_choice', correct: '{{2*a}}', distractors: ['{{2*a+1}}'] },
+        solution: { steps: ['$2 \\cdot {{a}}$'], result: '${{2*a}}$' },
+      },
+      {
+        id: 'l2',
+        difficulty: 'mittel',
+        count: 2,
+        params: { a: { min: 1, max: 9, step: 1 } },
+        contexts: [{ id: 'c', prompt: 'Berechne $3 \\cdot {{a}}$.' }],
+        answer: { type: 'multiple_choice', correct: '{{3*a}}', distractors: ['{{3*a+1}}'] },
+        solution: { steps: ['$3 \\cdot {{a}}$'], result: '${{3*a}}$' },
+      },
+    ],
+  }
+
+  it('yields the same keys, order and placements for MC → numeric / handwritten', () => {
+    const asNumeric = structuredClone(base) as { levels: { answer: unknown }[] }
+    asNumeric.levels[0]!.answer = { type: 'numeric', value: '2*a' }
+    const asHandwritten = structuredClone(base) as { levels: { answer: unknown }[] }
+    asHandwritten.levels[1]!.answer = { type: 'handwritten', rubric: ['Ergebnis ${{3*a}}$.'] }
+    const keys = (t: unknown) => generateExercises(t, { startIndex: 1 }).map((e) => e.key)
+    const expected = ['mix-001', 'mix-002', 'mix-003', 'mix-004', 'mix-005']
+    expect(keys(base)).toEqual(expected)
+    expect(keys(asNumeric)).toEqual(expected)
+    expect(keys(asHandwritten)).toEqual(expected)
+    expect(generateExercises(asHandwritten).map((e) => e.type)).toEqual([
+      'multiple_choice',
+      'multiple_choice',
+      'multiple_choice',
+      'handwritten',
+      'handwritten',
+    ])
   })
 })

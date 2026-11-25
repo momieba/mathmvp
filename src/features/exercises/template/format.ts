@@ -14,6 +14,38 @@ export function formatNumber(value: number, opts: { decimals?: number; tex?: boo
   return normalized.replace('.', opts.tex ? '{,}' : ',')
 }
 
+/** Number as LaTeX text (decimal comma as `{,}`), e.g. 2.5 → "2{,}5". */
+export function texNumber(value: number) {
+  return formatNumber(value, { tex: true })
+}
+
+/**
+ * Number as LaTeX fraction: integers stay integers, otherwise `\frac{n}{d}` (negative: `-\frac{n}{d}`).
+ * `maxDenominator` limits the search for the fraction (default 1000); throws if the value is no such fraction.
+ */
+export function texFraction(value: number, maxDenominator = 1000) {
+  if (!Number.isFinite(value)) throw new Error(`cannot format non-finite number ${value}`)
+  const rounded = Math.round(value)
+  if (Math.abs(value - rounded) < 1e-9) return texNumber(rounded)
+  for (let d = 2; d <= maxDenominator; d++) {
+    const n = Math.round(Math.abs(value) * d)
+    if (Math.abs(Math.abs(value) - n / d) < 1e-9) {
+      const g = gcd(n, d)
+      return `${value < 0 ? '-' : ''}\\frac{${n / g}}{${d / g}}`
+    }
+  }
+  throw new Error(`${value} is not a fraction with denominator <= ${maxDenominator}`)
+}
+
+function gcd(a: number, b: number): number {
+  return b === 0 ? a : gcd(b, a % b)
+}
+
+/** Number with explicit sign for building terms: 3 → "+ 3", -3 → "- 3" (absolute value as LaTeX number). */
+export function texSigned(value: number) {
+  return `${value < 0 ? '-' : '+'} ${texNumber(Math.abs(value))}`
+}
+
 const PLACEHOLDER = /\{\{\s*([^}:]+?)\s*(?::\s*(\d+)\s*)?\}\}/g
 
 /** Whether position `index` of `template` lies inside `$…$` / `$$…$$` math. */

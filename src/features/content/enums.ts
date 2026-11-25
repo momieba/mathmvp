@@ -31,3 +31,14 @@ export type VideoFormat = z.infer<typeof videoFormatSchema>
 
 export const videoStatusSchema = z.enum(['planned', 'produced', 'published'])
 export type VideoStatus = z.infer<typeof videoStatusSchema>
+
+/** Area of a basis skill (src/features/skills/schema.ts). */
+export const skillCategorySchema = z.enum([
+  'arithmetik',
+  'algebra',
+  'geometrie',
+  'funktionen',
+  'stochastik',
+  'allgemein',
+])
+export type SkillCategory = z.infer<typeof skillCategorySchema>
