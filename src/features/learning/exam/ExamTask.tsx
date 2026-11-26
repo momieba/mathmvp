@@ -1,5 +1,5 @@
 import { Camera, Pencil } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { DiagramView } from '@/components/math/DiagramView'
 import { RichText } from '@/components/math/RichText'
 import { GridPaper } from '@/components/paper/GridPaper'
@@ -10,7 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import type { PracticeExercise, UnreadableReason } from '../api'
 import { HANDWRITING_ENABLED } from '../config'
-import { HandwritingCanvas, type HandwritingCanvasHandle } from '../HandwritingCanvas'
+import {
+  HandwritingCanvas,
+  sheetBarClass,
+  type HandwritingCanvasHandle,
+} from '../HandwritingCanvas'
 import { PhotoInput } from '../PhotoInput'
 import { gradeExamHandwriting, submitExamAnswer } from './api'
 
@@ -112,6 +116,28 @@ export function ExamTask({
   }
   const canHandIn = (mode === 'photo' ? photo !== null : hasInk) && dirty && status !== 'grading'
 
+  // The hand-in button sits in the sticky tool bar (drawing) or a bar of its own (photo), so the
+  // long sheet never has to be scrolled to its end.
+  const handInLabel: ReactNode =
+    status === 'grading' ? (
+      'Wird gelesen …'
+    ) : status === 'saved' && !dirty ? (
+      'Abgegeben'
+    ) : status === 'saved' || status === 'unreadable' || status === 'error' ? (
+      <>
+        <span className="max-md:sr-only">Erneut</span> abgeben
+      </>
+    ) : (
+      <>
+        Abgeben <span className="max-md:sr-only">und weiter</span>
+      </>
+    )
+  const handInButton = (
+    <Button type="button" className="shrink-0 max-md:px-2" disabled={!canHandIn} onClick={handIn}>
+      {handInLabel}
+    </Button>
+  )
+
   const taskBlock = (
     <div className={cn(handwriting && 'px-4 py-3')}>
       <h2 id={`task-${exercise.id}`} className="text-h3">
@@ -133,7 +159,7 @@ export function ExamTask({
     <section
       hidden={!active}
       aria-labelledby={`task-${exercise.id}`}
-      className="flex flex-col gap-5"
+      className={cn('flex flex-col gap-5', handwriting && 'max-md:pb-20')}
     >
       {/* Handschrift: die Aufgabe steht oben auf dem Blatt (s. u.) */}
       {!handwriting && taskBlock}
@@ -176,44 +202,52 @@ export function ExamTask({
       ) : (
         <GridPaper as="div" raised contentClassName={handwriting ? 'p-0' : 'py-4'}>
           {handwriting ? (
-            <Tabs
-              value={mode}
-              onValueChange={(v) => setMode(v === 'photo' ? 'photo' : 'drawing')}
-              className="gap-0"
-            >
-              <div className="bg-background/60 border-b p-2">
-                <TabsList aria-label="Wie gibst du deine Lösung ab?" className="h-auto">
-                  <TabsTrigger value="drawing" className="min-h-11 px-4">
-                    <Pencil aria-hidden="true" />
-                    Zeichnen
-                  </TabsTrigger>
-                  <TabsTrigger value="photo" className="min-h-11 px-4">
-                    <Camera aria-hidden="true" />
-                    Foto
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-              {taskBlock}
-              <TabsContent value="drawing" keepMounted className="text-base">
-                <HandwritingCanvas
-                  ref={canvasRef}
-                  disabled={status === 'grading'}
-                  onChange={(ink) => {
-                    setHasInk(ink)
-                    changed()
-                  }}
-                />
-              </TabsContent>
-              <TabsContent value="photo" keepMounted className="text-base">
-                <PhotoInput
-                  disabled={status === 'grading'}
-                  onChange={(image) => {
-                    setPhoto(image)
-                    changed()
-                  }}
-                />
-              </TabsContent>
-            </Tabs>
+            <>
+              <Tabs
+                value={mode}
+                onValueChange={(v) => setMode(v === 'photo' ? 'photo' : 'drawing')}
+                className="gap-0"
+              >
+                <div className="bg-background/60 border-b p-2">
+                  <TabsList aria-label="Wie gibst du deine Lösung ab?" className="h-auto">
+                    <TabsTrigger value="drawing" className="min-h-11 px-4">
+                      <Pencil aria-hidden="true" />
+                      Zeichnen
+                    </TabsTrigger>
+                    <TabsTrigger value="photo" className="min-h-11 px-4">
+                      <Camera aria-hidden="true" />
+                      Foto
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+                {taskBlock}
+                <TabsContent value="drawing" keepMounted className="text-base">
+                  <HandwritingCanvas
+                    ref={canvasRef}
+                    disabled={status === 'grading'}
+                    action={handInButton}
+                    onChange={(ink) => {
+                      setHasInk(ink)
+                      changed()
+                    }}
+                  />
+                </TabsContent>
+                <TabsContent value="photo" keepMounted className="text-base">
+                  <PhotoInput
+                    disabled={status === 'grading'}
+                    onChange={(image) => {
+                      setPhoto(image)
+                      changed()
+                    }}
+                  />
+                </TabsContent>
+              </Tabs>
+              {mode === 'photo' && (
+                <div role="group" aria-label="Abgeben" className={cn(sheetBarClass, 'justify-end')}>
+                  {handInButton}
+                </div>
+              )}
+            </>
           ) : exercise.type === 'numeric' ? (
             <div className="flex flex-wrap items-center gap-3">
               <Input
@@ -258,20 +292,6 @@ export function ExamTask({
         <p role="alert" className="text-destructive">
           {error}
         </p>
-      )}
-
-      {handwriting && (
-        <div>
-          <Button type="button" disabled={!canHandIn} onClick={handIn}>
-            {status === 'grading'
-              ? 'Wird gelesen …'
-              : status === 'saved' && !dirty
-                ? 'Abgegeben'
-                : status === 'saved' || status === 'unreadable' || status === 'error'
-                  ? 'Erneut abgeben'
-                  : 'Abgeben und weiter'}
-          </Button>
-        </div>
       )}
     </section>
   )

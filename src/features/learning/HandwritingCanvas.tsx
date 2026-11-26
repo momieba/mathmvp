@@ -49,7 +49,16 @@ type Props = {
    * number written next to them. Shown on top of the drawing, never exported.
    */
   marks?: readonly { box: Box; label: number; kind?: 'wrong' | 'correct' }[]
+  /** Submit button etc.: sits at the right end of the tool bar, so it is always within reach. */
+  action?: ReactNode
 }
+
+/**
+ * Bar at the bottom edge of the sheet: phones fixed to the screen, bigger screens sticky at the
+ * bottom of the viewport. Shared by the tool bar and the action bars next to it.
+ */
+export const sheetBarClass =
+  'bg-background flex items-center justify-between gap-1 border-t-2 p-2 max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-30 max-md:flex-nowrap max-md:px-2 max-md:pb-[max(0.5rem,env(safe-area-inset-bottom))] md:sticky md:bottom-0 md:z-10 md:flex-wrap'
 
 export type Mark = NonNullable<Props['marks']>[number]
 
@@ -73,7 +82,7 @@ const INK_EXPORT = '#1e3fbf' // always dark ink on white for the model, also in 
  * been seen, one-finger touch is ignored. Undo/redo/clear via toolbar and Ctrl+Z / Ctrl+Y.
  */
 export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
-  function HandwritingCanvas({ disabled = false, readOnly = false, onChange, marks }, ref) {
+  function HandwritingCanvas({ disabled = false, readOnly = false, onChange, marks, action }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const hintId = useId()
     const [history, dispatch] = useReducer(historyReducer, emptyHistory)
@@ -353,43 +362,42 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
           <>
             {/* Phones: fixed at the bottom edge (thumb reach). Bigger screens: sticks to the bottom
                 of the viewport, so the long sheet never needs scrolling back to the tools. */}
-            <div
-              role="group"
-              aria-label="Zeichenwerkzeuge"
-              className="bg-background flex flex-wrap items-center gap-1 border-t-2 p-2 max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-30 max-md:flex-nowrap max-md:justify-between max-md:px-3 max-md:pb-[max(0.5rem,env(safe-area-inset-bottom))] md:sticky md:bottom-0 md:z-10"
-            >
-              <ToolButton
-                label="Stift"
-                icon={<Pencil className="size-4" />}
-                pressed={tool === 'pen'}
-                onClick={() => setTool('pen')}
-                disabled={disabled}
-              />
-              <ToolButton
-                label="Radierer"
-                icon={<Eraser className="size-4" />}
-                pressed={tool === 'eraser'}
-                onClick={() => setTool('eraser')}
-                disabled={disabled}
-              />
-              <ToolButton
-                label="Rückgängig"
-                icon={<Undo2 className="size-4" />}
-                onClick={() => act('undo')}
-                disabled={disabled || !canUndo(history)}
-              />
-              <ToolButton
-                label="Wiederholen"
-                icon={<Redo2 className="size-4" />}
-                onClick={() => act('redo')}
-                disabled={disabled || !canRedo(history)}
-              />
-              <ToolButton
-                label="Leeren"
-                icon={<Trash2 className="size-4" />}
-                onClick={() => act('clear')}
-                disabled={disabled || strokes.length === 0}
-              />
+            <div role="group" aria-label="Zeichenwerkzeuge" className={sheetBarClass}>
+              <div className="flex items-center md:gap-1">
+                <ToolButton
+                  label="Stift"
+                  icon={<Pencil className="size-4" />}
+                  pressed={tool === 'pen'}
+                  onClick={() => setTool('pen')}
+                  disabled={disabled}
+                />
+                <ToolButton
+                  label="Radierer"
+                  icon={<Eraser className="size-4" />}
+                  pressed={tool === 'eraser'}
+                  onClick={() => setTool('eraser')}
+                  disabled={disabled}
+                />
+                <ToolButton
+                  label="Rückgängig"
+                  icon={<Undo2 className="size-4" />}
+                  onClick={() => act('undo')}
+                  disabled={disabled || !canUndo(history)}
+                />
+                <ToolButton
+                  label="Wiederholen"
+                  icon={<Redo2 className="size-4" />}
+                  onClick={() => act('redo')}
+                  disabled={disabled || !canRedo(history)}
+                />
+                <ToolButton
+                  label="Leeren"
+                  icon={<Trash2 className="size-4" />}
+                  onClick={() => act('clear')}
+                  disabled={disabled || strokes.length === 0}
+                />
+              </div>
+              {action}
             </div>
           </>
         )}

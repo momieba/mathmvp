@@ -1,5 +1,5 @@
 import { Lightbulb, Pencil, Camera } from 'lucide-react'
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { AppHeader } from '@/components/layout/AppHeader'
 import { PageShell } from '@/components/layout/PageShell'
@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { buttonClass } from '@/lib/buttonClass'
 import { cn } from '@/lib/utils'
+import { LG_QUERY, useMediaQuery } from '@/lib/useMediaQuery'
 import {
   fetchHint,
   useGradeHandwriting,
@@ -27,7 +28,7 @@ import {
 import { HANDWRITING_ENABLED } from './config'
 import { HandwritingNotes, ResultNote, Solution, type Result } from './Feedback'
 import { marksOf } from './feedbackText'
-import { HandwritingCanvas, type HandwritingCanvasHandle } from './HandwritingCanvas'
+import { HandwritingCanvas, sheetBarClass, type HandwritingCanvasHandle } from './HandwritingCanvas'
 import { PhotoInput } from './PhotoInput'
 import { RecommendationNote } from './RecommendationNote'
 import { recommend, wrongStreak, type Recommendation } from './recommendations'
@@ -190,6 +191,7 @@ function ExerciseCard({
   const result: Result | undefined = submit.data ?? graded
   const pending = submit.isPending || grade.isPending
   const multi = exercise.presentation.multi === true
+  const marginBeside = useMediaQuery(LG_QUERY) // correction margin sits beside the sheet
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -236,13 +238,34 @@ function ExerciseCard({
     : exercise.type === 'numeric'
       ? value.trim() !== ''
       : selected.length > 0
-  const submitLabel = result
-    ? 'Nächste Aufgabe'
-    : handwriting
-      ? grade.isPending
-        ? 'Wird korrigiert …'
-        : 'Lösung abgeben'
-      : 'Prüfen'
+  const submitLabel: ReactNode = result ? (
+    'Nächste Aufgabe'
+  ) : handwriting ? (
+    grade.isPending ? (
+      'Korrigiere …'
+    ) : (
+      <>
+        <span className="max-md:sr-only">Lösung</span> abgeben
+      </>
+    )
+  ) : (
+    'Prüfen'
+  )
+  const submitDisabled = (!result && !canSubmit) || pending
+
+  // Handwriting: the submit button stays within reach next to the sticky tool bar instead of at the
+  // end of the long sheet – in the correction margin (lg), else in the tool bar / a bar of its own.
+  const inToolbar = handwriting && !marginBeside && mode === 'drawing' && !result
+  const ownBar = handwriting && !marginBeside && !inToolbar
+  const submitButton = (className?: string) => (
+    <Button
+      type="submit"
+      className={cn('px-6', handwriting && 'max-md:px-2', className)}
+      disabled={submitDisabled}
+    >
+      {submitLabel}
+    </Button>
+  )
 
   // Task text; for handwriting it is the top of the sheet, so it sits tight on the squared paper.
   const taskBlock = (
@@ -263,10 +286,7 @@ function ExerciseCard({
   )
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className={cn('flex flex-col gap-6', handwriting && !result && 'max-md:pb-20')}
-    >
+    <form onSubmit={onSubmit} className={cn('flex flex-col gap-6', handwriting && 'max-md:pb-20')}>
       {/* Aufgabe: bei Handschrift oben auf dem Blatt (s. u.), sonst frei über der Antwort */}
       {!handwriting && taskBlock}
 
@@ -321,81 +341,99 @@ function ExerciseCard({
           raised
           aria-label="Antwortbereich"
           margin={
-            <div role="status" className={cn(handwriting && 'lg:sticky lg:top-4')}>
-              {grade.isPending ? (
-                <PendingNote />
-              ) : unreadable ? (
-                <UnreadableNote reason={unreadable.reason} photo={mode === 'photo'} />
-              ) : graded ? (
-                <HandwritingNotes result={graded} />
-              ) : submit.data ? (
-                <ResultNote result={submit.data} />
-              ) : null}
-            </div>
+            <>
+              <div
+                role="status"
+                className={cn(handwriting && 'lg:sticky lg:top-4 lg:px-4 lg:py-3')}
+              >
+                {grade.isPending ? (
+                  <PendingNote />
+                ) : unreadable ? (
+                  <UnreadableNote reason={unreadable.reason} photo={mode === 'photo'} />
+                ) : graded ? (
+                  <HandwritingNotes result={graded} />
+                ) : submit.data ? (
+                  <ResultNote result={submit.data} />
+                ) : null}
+              </div>
+              {handwriting && marginBeside && (
+                <div className="bg-background sticky bottom-0 z-10 mt-auto border-t-2 p-2">
+                  {submitButton('w-full')}
+                </div>
+              )}
+            </>
           }
           marginAt={handwriting ? 'lg' : 'md'}
           marginClassName={
             handwriting
-              ? 'max-lg:has-[[role=status]:empty]:hidden'
+              ? 'max-lg:has-[[role=status]:empty]:hidden lg:flex lg:flex-col lg:p-0'
               : 'max-md:has-[[role=status]:empty]:hidden'
           }
           contentClassName={handwriting ? 'p-0' : 'py-4'}
         >
           {handwriting ? (
-            <Tabs
-              value={mode}
-              onValueChange={(v) => {
-                setMode(v === 'photo' ? 'photo' : 'drawing')
-                if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
-              }}
-              className="gap-0"
-            >
-              <div className="bg-background/60 border-b p-2">
-                <TabsList aria-label="Wie gibst du deine Lösung ab?" className="h-auto">
-                  <TabsTrigger
-                    value="drawing"
-                    className="min-h-11 px-4"
+            <>
+              <Tabs
+                value={mode}
+                onValueChange={(v) => {
+                  setMode(v === 'photo' ? 'photo' : 'drawing')
+                  if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
+                }}
+                className="gap-0"
+              >
+                <div className="bg-background/60 border-b p-2">
+                  <TabsList aria-label="Wie gibst du deine Lösung ab?" className="h-auto">
+                    <TabsTrigger
+                      value="drawing"
+                      className="min-h-11 px-4"
+                      disabled={pending || !!graded}
+                    >
+                      <Pencil aria-hidden="true" />
+                      Zeichnen
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="photo"
+                      className="min-h-11 px-4"
+                      disabled={pending || !!graded}
+                    >
+                      <Camera aria-hidden="true" />
+                      Foto
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+                {taskBlock}
+                {/* Both panels stay mounted so the drawing survives switching to the photo and back. */}
+                <TabsContent value="drawing" keepMounted className="text-base">
+                  <HandwritingCanvas
+                    ref={canvasRef}
+                    disabled={grade.isPending}
+                    readOnly={!!graded}
+                    marks={graded && mode === 'drawing' ? marksOf(graded.steps) : undefined}
+                    action={inToolbar ? submitButton('shrink-0') : undefined}
+                    onChange={(ink) => {
+                      setHasInk(ink)
+                      if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
+                    }}
+                  />
+                </TabsContent>
+                <TabsContent value="photo" keepMounted className="text-base">
+                  <PhotoInput
+                    key={photoKey}
                     disabled={pending || !!graded}
-                  >
-                    <Pencil aria-hidden="true" />
-                    Zeichnen
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="photo"
-                    className="min-h-11 px-4"
-                    disabled={pending || !!graded}
-                  >
-                    <Camera aria-hidden="true" />
-                    Foto
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-              {taskBlock}
-              {/* Both panels stay mounted so the drawing survives switching to the photo and back. */}
-              <TabsContent value="drawing" keepMounted className="text-base">
-                <HandwritingCanvas
-                  ref={canvasRef}
-                  disabled={grade.isPending}
-                  readOnly={!!graded}
-                  marks={graded && mode === 'drawing' ? marksOf(graded.steps) : undefined}
-                  onChange={(ink) => {
-                    setHasInk(ink)
-                    if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
-                  }}
-                />
-              </TabsContent>
-              <TabsContent value="photo" keepMounted className="text-base">
-                <PhotoInput
-                  key={photoKey}
-                  disabled={pending || !!graded}
-                  marks={graded && mode === 'photo' ? marksOf(graded.steps) : undefined}
-                  onChange={(image) => {
-                    setPhoto(image)
-                    if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
-                  }}
-                />
-              </TabsContent>
-            </Tabs>
+                    marks={graded && mode === 'photo' ? marksOf(graded.steps) : undefined}
+                    onChange={(image) => {
+                      setPhoto(image)
+                      if (grade.data?.status === 'unreadable' || grade.error) grade.reset()
+                    }}
+                  />
+                </TabsContent>
+              </Tabs>
+              {ownBar && (
+                <div role="group" aria-label="Abgeben" className={cn(sheetBarClass, 'justify-end')}>
+                  {submitButton()}
+                </div>
+              )}
+            </>
           ) : exercise.type === 'numeric' ? (
             <div className="flex items-center gap-3">
               <Input
@@ -450,9 +488,7 @@ function ExerciseCard({
       )}
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" className="px-6" disabled={(!result && !canSubmit) || pending}>
-          {submitLabel}
-        </Button>
+        {!handwriting && submitButton()}
         {!result && (
           <Button
             type="button"

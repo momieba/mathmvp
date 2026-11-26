@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import type { HandwritingResult, PracticeExercise } from './api'
 import { decodeErrorMessage, ImageError, prepareImage } from './image'
@@ -28,15 +29,18 @@ vi.mock('./image', async (importOriginal) => ({
 }))
 
 vi.mock('./HandwritingCanvas', () => ({
+  sheetBarClass: '',
   HandwritingCanvas: ({
     onChange,
     disabled,
     readOnly,
+    action,
     ref,
   }: {
     onChange?: (ink: boolean) => void
     disabled?: boolean
     readOnly?: boolean
+    action?: ReactNode
     ref?: { current: unknown }
   }) => {
     if (ref) ref.current = { toImage: () => 'data:image/png;base64,AAAA', isEmpty: () => false }
@@ -45,6 +49,9 @@ vi.mock('./HandwritingCanvas', () => ({
         <button type="button" onClick={() => onChange?.(true)}>
           schreiben
         </button>
+        <div role="group" aria-label="Zeichenwerkzeuge">
+          {action}
+        </div>
       </div>
     )
   },
@@ -192,12 +199,70 @@ describe('PracticePage with handwriting', () => {
     )
   })
 
+  it('puts the submit button into the tool bar, once, not below the sheet', () => {
+    renderPage()
+    const submit = screen.getByRole('button', { name: 'Lösung abgeben' })
+    expect(screen.getAllByRole('button', { name: 'Lösung abgeben' })).toHaveLength(1)
+    expect(
+      within(screen.getByRole('group', { name: 'Zeichenwerkzeuge' })).getByRole('button', {
+        name: 'Lösung abgeben',
+      }),
+    ).toBe(submit)
+    expect(submit).toHaveAttribute('type', 'submit')
+  })
+
+  it('moves the submit button into the tool bar of its own for photos and results', () => {
+    renderPage()
+    fireEvent.click(screen.getByRole('tab', { name: 'Foto' }))
+    const bar = screen.getByRole('group', { name: 'Abgeben' })
+    expect(within(bar).getByRole('button', { name: 'Lösung abgeben' })).toBeDisabled()
+    expect(screen.getAllByRole('button', { name: 'Lösung abgeben' })).toHaveLength(1)
+  })
+
+  it('keeps "Nächste Aufgabe" within reach after the correction', () => {
+    gradeState = { isPending: false, error: null, data: gradedResult }
+    renderPage()
+    const bar = screen.getByRole('group', { name: 'Abgeben' })
+    expect(within(bar).getByRole('button', { name: 'Nächste Aufgabe' })).toBeEnabled()
+    expect(screen.getAllByRole('button', { name: 'Nächste Aufgabe' })).toHaveLength(1)
+  })
+
+  describe('with the correction margin beside the sheet (lg)', () => {
+    beforeEach(() => {
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: true,
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }))
+    })
+    afterEach(() => vi.unstubAllGlobals())
+
+    it('shows the submit button once, in the margin column', () => {
+      renderPage()
+      const submit = screen.getByRole('button', { name: 'Lösung abgeben' })
+      expect(screen.getAllByRole('button', { name: 'Lösung abgeben' })).toHaveLength(1)
+      const sheet = screen.getByRole('region', { name: 'Antwortbereich' })
+      expect(sheet).toContainElement(submit)
+      expect(screen.getByRole('group', { name: 'Zeichenwerkzeuge' })).not.toContainElement(submit)
+      expect(submit).toBeDisabled()
+      fireEvent.click(screen.getByRole('button', { name: 'schreiben' }))
+      expect(submit).toBeEnabled()
+    })
+
+    it('shows "Nächste Aufgabe" in the margin after the correction', () => {
+      gradeState = { isPending: false, error: null, data: gradedResult }
+      renderPage()
+      expect(screen.getAllByRole('button', { name: 'Nächste Aufgabe' })).toHaveLength(1)
+    })
+  })
+
   it('shows progress while grading and locks the sheet', () => {
     gradeState = { isPending: true, error: null }
     renderPage()
     expect(screen.getByText('Deine Lösung wird gelesen …')).toBeInTheDocument()
     expect(screen.getByTestId('canvas')).toHaveAttribute('data-disabled', 'true')
-    expect(screen.getByRole('button', { name: 'Wird korrigiert …' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Korrigiere …' })).toBeDisabled()
   })
 
   it('lists correct, wrong and unclear steps, then the correct result', () => {
