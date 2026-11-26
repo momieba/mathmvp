@@ -31,6 +31,7 @@ export function ResultNote({ result }: { result: Result }) {
 }
 
 const stepFallback = {
+  correct: 'Stimmt.',
   incorrect: 'Hier stimmt etwas nicht.',
   unclear: 'Das kann ich nicht sicher lesen.',
 } as const
@@ -49,9 +50,9 @@ function AiNote() {
 }
 
 /**
- * Compact correction of a handwritten solution: only what needs attention. Correct steps are not
- * listed; each wrong/unclear step gets one short note (its mistake is underlined in the drawing with
- * the same number), then one closing line with the correct result.
+ * Correction of a handwritten solution like a teacher: every step gets one short note in order –
+ * check for correct ones, cross for wrong ones (underlined in the drawing with the same number),
+ * question mark for unclear ones – then a closing line that tells "almost there" from "not quite".
  */
 export function HandwritingNotes({
   result,
@@ -78,21 +79,24 @@ export function HandwritingNotes({
     )
   }
 
-  const flagged = result.steps.flatMap((step, i) =>
-    step.verdict === 'correct' ? [] : [{ step, n: i + 1 }],
-  )
-  const hasWrongStep = flagged.some(({ step }) => step.verdict === 'incorrect')
+  const listed = result.steps.map((step, i) => ({ step, n: i + 1 }))
+  const hasWrongStep = listed.some(({ step }) => step.verdict === 'incorrect')
+  const hasCorrectStep = listed.some(({ step }) => step.verdict === 'correct')
   const correctText = correctAnswerText(result.answer)
   const final = result.final.verdict
+  // Working right, only the result is not written down: fair wording (still counts as not solved).
+  const almost = !hasWrongStep && hasCorrectStep && final === 'missing'
 
   return (
     <div className="flex flex-col gap-3">
-      {flagged.map(({ step, n }, i) => {
-        const verdict = step.verdict === 'incorrect' ? 'incorrect' : 'unclear'
+      {listed.map(({ step, n }, i) => {
+        const verdict = step.verdict
         return (
           <MarginNote
             key={n}
-            status={verdict === 'incorrect' ? 'wrong' : 'unclear'}
+            status={
+              verdict === 'correct' ? 'correct' : verdict === 'incorrect' ? 'wrong' : 'unclear'
+            }
             step={n}
             index={i}
             animate
@@ -110,15 +114,17 @@ export function HandwritingNotes({
       {/* The result only gets its own line when no step explains what went wrong. */}
       {!hasWrongStep && final !== 'correct' && (
         <MarginNote
-          status={final === 'missing' ? 'unclear' : 'wrong'}
-          index={flagged.length}
+          status={final === 'missing' ? 'missing' : 'wrong'}
+          index={listed.length}
           animate
         >
           <RichText text={result.final.comment || finalFallback[final]} />
         </MarginNote>
       )}
-      <MarginNote status="wrong" index={flagged.length + 1} animate>
-        Nicht ganz.
+      <MarginNote status={almost ? 'missing' : 'wrong'} index={listed.length + 1} animate>
+        {almost
+          ? 'Fast geschafft – deine Rechnung stimmt, es fehlt nur das Endergebnis.'
+          : 'Nicht ganz.'}
         {correctText && (
           <>
             {' '}

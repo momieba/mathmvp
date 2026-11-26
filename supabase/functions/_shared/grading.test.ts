@@ -360,3 +360,22 @@ describe('normalizeBox', () => {
     expect(r?.steps[0]?.box).toEqual([10, 20, 30, 40])
   })
 })
+
+describe('step-by-step praise and missing result', () => {
+  it('prompt demands every step incl. correct ones with praise, boxes for them, and "missing"', () => {
+    const p = buildPrompt({ type: 'handwritten', prompt: 'x', answer: {}, solution: {} })
+    expect(p.system).toContain('JEDEN Schritt')
+    expect(p.system).toContain('auch die richtigen')
+    expect(p.system).toContain('positiven Kommentar')
+    expect(p.system).toContain('Haken')
+    expect(p.system).toContain('final.verdict = "missing"')
+  })
+
+  it('a written-less result is "missing", not "incorrect", and still not solved', () => {
+    const f = feedback({ final: { studentValue: null, verdict: 'incorrect', comment: 'fehlt' } })
+    expect(evaluateFeedback(f, { type: 'handwritten', answer: {} })).toMatchObject({
+      correct: false,
+      final: { verdict: 'missing' },
+    })
+  })
+})

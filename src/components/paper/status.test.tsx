@@ -7,7 +7,7 @@ const all = Object.keys(statusConfig) as Status[]
 
 describe('statusConfig', () => {
   it('gives every status its own label, icon and color (not color alone)', () => {
-    expect([...all].sort()).toEqual(['correct', 'unclear', 'unreadable', 'wrong'])
+    expect([...all].sort()).toEqual(['correct', 'missing', 'unclear', 'unreadable', 'wrong'])
     expect(new Set(all.map((s) => statusConfig[s].label)).size).toBe(all.length)
     expect(new Set(all.map((s) => statusConfig[s].icon)).size).toBe(all.length)
     expect(new Set(all.map((s) => statusConfig[s].color)).size).toBe(all.length)

@@ -200,10 +200,11 @@ describe('PracticePage with handwriting', () => {
     expect(screen.getByRole('button', { name: 'Wird korrigiert …' })).toBeDisabled()
   })
 
-  it('lists only the steps that need attention, then the correct result', () => {
+  it('lists correct, wrong and unclear steps, then the correct result', () => {
     gradeState = { isPending: false, error: null, data: gradedResult }
     renderPage()
-    expect(screen.queryByText('Schritt 1:')).not.toBeInTheDocument() // correct step: not listed
+    expect(screen.getByText('Schritt 1:')).toBeInTheDocument() // correct steps are listed too
+    expect(screen.getAllByText('Stimmt').length).toBeGreaterThan(0)
     expect(screen.getByText('Schritt 2:')).toBeInTheDocument()
     expect(screen.getByText('Schritt 3:')).toBeInTheDocument()
     expect(screen.getByText('Die Wurzel aus 25 ist 5.')).toBeInTheDocument()

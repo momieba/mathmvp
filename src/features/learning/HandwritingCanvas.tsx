@@ -48,7 +48,7 @@ type Props = {
    * Mistakes to underline (boxes of the grader, relative to the last exported image) with the step
    * number written next to them. Shown on top of the drawing, never exported.
    */
-  marks?: readonly { box: Box; label: number }[]
+  marks?: readonly { box: Box; label: number; kind?: 'wrong' | 'correct' }[]
 }
 
 export type Mark = NonNullable<Props['marks']>[number]
@@ -63,6 +63,7 @@ const rowsForScreen = () =>
     : Math.min(MAX_ROWS, Math.max(MIN_ROWS, Math.ceil((window.innerHeight * SCREENS) / KARO_SIZE)))
 const INK_FALLBACK = '#1e3fbf' // Königsblau, light theme token
 const WRONG_FALLBACK = '#c2132d'
+const CORRECT_FALLBACK = '#1b7a3a'
 const INK_EXPORT = '#1e3fbf' // always dark ink on white for the model, also in dark mode
 
 /**
@@ -127,7 +128,13 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       const plan = lastPlan.current
       if (plan && marksRef.current?.length) {
         const wrong = getComputedStyle(canvas).getPropertyValue('--wrong').trim() || WRONG_FALLBACK
-        for (const m of marksRef.current) drawMark(ctx, boxToCanvas(m.box, plan), m.label, wrong)
+        const right =
+          getComputedStyle(canvas).getPropertyValue('--correct').trim() || CORRECT_FALLBACK
+        for (const m of marksRef.current) {
+          const u = boxToCanvas(m.box, plan)
+          if (m.kind === 'correct') drawCheck(ctx, u, right)
+          else drawMark(ctx, u, m.label, wrong)
+        }
       }
     }, [])
 
@@ -456,6 +463,29 @@ function drawMark(
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText(String(label), cx, y + 0.5)
+  ctx.restore()
+}
+
+/** Discreet check at the right end of a correct line (no underline, no number). */
+function drawCheck(
+  ctx: CanvasRenderingContext2D,
+  u: { x0: number; x1: number; y: number },
+  color: string,
+) {
+  const cx = u.x1 + 18
+  const cy = u.y - 6
+  ctx.save()
+  ctx.globalCompositeOperation = 'source-over'
+  ctx.globalAlpha = 0.8
+  ctx.strokeStyle = color
+  ctx.lineWidth = 2.5
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  ctx.beginPath()
+  ctx.moveTo(cx - 7, cy)
+  ctx.lineTo(cx - 2, cy + 6)
+  ctx.lineTo(cx + 8, cy - 8)
+  ctx.stroke()
   ctx.restore()
 }
 
