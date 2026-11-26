@@ -59,6 +59,40 @@ describe('HandwritingNotes', () => {
   })
 })
 
+describe('HandwritingNotes for a solved task', () => {
+  const solved: Graded = {
+    ...base,
+    correct: true,
+    steps: [
+      { studentWork: '$m = 3$', verdict: 'correct', comment: 'Steigung richtig', referenceStep: 1 },
+      {
+        studentWork: '$-9 = -7$',
+        verdict: 'unclear',
+        comment: 'Gemeint ist $2 - 9 = -7$ – stimmt.',
+        referenceStep: 2,
+      },
+    ],
+    final: { studentValue: '$g(x) = 3x - 7$', verdict: 'correct', comment: '' },
+    summary: 'Gut gerechnet.',
+    presentation: { tidy: false, comment: 'Schreib Nebenrechnungen so, dass sie stimmen.' },
+  }
+
+  it('shows "Richtig gelöst!" with a check, notation remarks neutral and the yellow tip', () => {
+    const { container } = render(<HandwritingNotes result={solved} />)
+    expect(screen.getByText('Richtig gelöst!')).toBeInTheDocument()
+    expect(container.querySelector('[data-status="wrong"]')).toBeNull()
+    expect(container.querySelectorAll('[data-status="unclear"]')).toHaveLength(1)
+    expect(screen.queryByText(/Nicht ganz/)).toBeNull()
+    expect(screen.getByText('Tipp zur Darstellung')).toBeInTheDocument()
+  })
+
+  it('does not draw red underlines for notation remarks (unclear), only for real errors', () => {
+    const box: [number, number, number, number] = [1, 2, 3, 4]
+    const marks = marksOf(solved.steps.map((st) => ({ ...st, box })))
+    expect(marks.map((m) => m.kind)).toEqual(['correct'])
+  })
+})
+
 describe('marksOf', () => {
   it('marks correct steps with checks and wrong ones with underlines, only with a box', () => {
     const box: [number, number, number, number] = [1, 2, 3, 4]

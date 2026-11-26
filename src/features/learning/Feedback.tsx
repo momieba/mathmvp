@@ -83,11 +83,37 @@ export function HandwritingNotes({
   /** Quote every flagged line (no drawing with underlines next to it, e.g. exam results). */
   showWork?: boolean
 }) {
+  const listed = result.steps.map((step, i) => ({ step, n: i + 1 }))
+  const noteOf = ({ step, n }: (typeof listed)[number], i: number) => {
+    const verdict = step.verdict
+    return (
+      <MarginNote
+        key={n}
+        status={verdict === 'correct' ? 'correct' : verdict === 'incorrect' ? 'wrong' : 'unclear'}
+        step={n}
+        index={i}
+        animate
+      >
+        {/* Without an underline in the drawing, quote the line so the student finds it. */}
+        {(showWork || !step.box) && step.studentWork && (
+          <span className="text-fine text-muted-foreground block font-sans font-normal">
+            <RichText text={asMath(step.studentWork)} />
+          </span>
+        )}
+        <RichText text={step.comment || stepFallback[verdict]} />
+      </MarginNote>
+    )
+  }
+  const stepNotes = listed.map(noteOf)
+
+  // Solved: clear positive summary (notation remarks on single steps and the yellow tip stay).
   if (result.correct) {
     return (
-      <>
-        <MarginNote status="correct" animate>
-          Stimmt!
+      <div className="flex flex-col gap-3">
+        {/* Only remarks (unclear, e.g. notation) – a clean solution gets one note. */}
+        {listed.map((l, i) => (l.step.verdict === 'unclear' ? noteOf(l, i) : null))}
+        <MarginNote status="correct" index={listed.length} animate>
+          <span className="font-semibold">Richtig gelöst!</span>
           {result.summary && (
             <>
               {' '}
@@ -97,11 +123,10 @@ export function HandwritingNotes({
         </MarginNote>
         <PresentationTip presentation={result.presentation} />
         <AiNote />
-      </>
+      </div>
     )
   }
 
-  const listed = result.steps.map((step, i) => ({ step, n: i + 1 }))
   const hasWrongStep = listed.some(({ step }) => step.verdict === 'incorrect')
   const hasCorrectStep = listed.some(({ step }) => step.verdict === 'correct')
   const correctText = correctAnswerText(result.answer)
@@ -111,28 +136,7 @@ export function HandwritingNotes({
 
   return (
     <div className="flex flex-col gap-3">
-      {listed.map(({ step, n }, i) => {
-        const verdict = step.verdict
-        return (
-          <MarginNote
-            key={n}
-            status={
-              verdict === 'correct' ? 'correct' : verdict === 'incorrect' ? 'wrong' : 'unclear'
-            }
-            step={n}
-            index={i}
-            animate
-          >
-            {/* Without an underline in the drawing, quote the line so the student finds it. */}
-            {(showWork || !step.box) && step.studentWork && (
-              <span className="text-fine text-muted-foreground block font-sans font-normal">
-                <RichText text={asMath(step.studentWork)} />
-              </span>
-            )}
-            <RichText text={step.comment || stepFallback[verdict]} />
-          </MarginNote>
-        )
-      })}
+      {stepNotes}
       {/* The result only gets its own line when no step explains what went wrong. */}
       {!hasWrongStep && final !== 'correct' && (
         <MarginNote

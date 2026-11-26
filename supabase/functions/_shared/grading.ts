@@ -79,7 +79,7 @@ export const FEEDBACK_SCHEMA = {
           comment: {
             type: 'string',
             description:
-              'At most 10 words in German, Du-form, concrete. Correct steps: short praise saying what is right (e.g. "Steigung richtig: $m = 2$", "$b = -3$ stimmt"). Incorrect steps: what is wrong (e.g. "$\\sqrt{16}$ ist 4, nicht 8")',
+              'At most 10 words in German, Du-form, concrete. Correct steps: short praise saying what is right (e.g. "Steigung richtig: $m = 2$", "$b = -3$ stimmt"). Incorrect steps (content errors only; formally untidy but meant correctly: verdict correct or unclear with a friendly note like "Gemeint ist $2 - 9 = -7$ – stimmt."): what is wrong (e.g. "$\\sqrt{16}$ ist 4, nicht 8")',
           },
           referenceStep: {
             type: 'integer',
@@ -126,12 +126,12 @@ export const FEEDBACK_SCHEMA = {
         tidy: {
           type: 'boolean',
           description:
-            'false only for clear flaws: the line of thought is hard to follow (steps scattered, no recognisable order), or a lot is crossed out/scribbled. Small corrections or a single crossed-out mistake are normal: true.',
+            'false for clear flaws: the line of thought is hard to follow (steps scattered, no recognisable order), a lot is crossed out/scribbled over, OR formally wrong equations/side calculations are written (false equality chains, wrong function name, shortened side calculation). A single cleanly crossed-out mistake is normal: true.',
         },
         comment: {
           type: 'string',
           description:
-            'Only if tidy is false: one short, friendly, concrete tip in German, Du-form, at most 20 words (e.g. "Schreib die Schritte untereinander, damit man deinen Weg verfolgen kann."). Empty string if tidy.',
+            'Only if tidy is false: one short, friendly, concrete tip in German, Du-form, at most 20 words (e.g. "Schreib die Schritte untereinander, damit man deinen Weg verfolgen kann." or "Schreib Nebenrechnungen so, dass sie stimmen: $2 - 9 = -7$ statt $-9 = -7$."). Empty string if tidy.',
         },
       },
       required: ['tidy', 'comment'],
@@ -162,6 +162,7 @@ export function buildPrompt(input: PromptInput): { system: string; user: string 
     '- Bewerte JEDEN Schritt der Schülerlösung einzeln und gib ihn in steps aus, in der Reihenfolge, in der er geschrieben ist – auch die richtigen. Richtige Schritte bekommen verdict "correct" und einen kurzen positiven Kommentar, der sagt, was stimmt (z. B. "Steigung richtig: $m = 2$", "$b = -3$ stimmt"). Lass keinen richtigen Schritt weg und fasse nicht mehrere Schritte zusammen.',
     '- Akzeptiere andere richtige Lösungswege und gleichwertige Schreibweisen (Komma statt Punkt, gekürzte/ungekürzte Brüche, sinnvolle Rundung). Ein Folgefehler aus einem früheren Fehler ist nur an der ersten Stelle falsch.',
     '- Bewerte nur, was wirklich auf dem Bild steht – erfinde nichts. Wenn du einen Schritt nicht sicher lesen kannst, setze verdict "unclear".',
+    '- "incorrect" ist AUSSCHLIESSLICH für inhaltliche Fehler: falscher Ansatz, falsches Verfahren oder ein Rechenfehler, der zu einem falschen Zwischen- oder Endergebnis führt oder führen würde. Formal unsaubere Schreibweise, deren gemeinter Rechenschritt erkennbar richtig ist, ist KEIN Fehler: falsche Gleichheitsketten (z. B. "-9 = -7" gemeint 2 - 9 = -7), verkürzte Nebenrechnungen, falscher Funktionsname (f(3) statt g(3)), fehlende Klammern ohne Folgen. Solche Schritte bekommen verdict "correct" (oder "unclear") mit freundlichem Kommentar (z. B. "Gemeint ist $2 - 9 = -7$ – das stimmt, schreib es aber so auf.") und werden zusätzlich in presentation berücksichtigt. Prüfe bei einer Nebenrechnung, was gemeint ist: führt sie zum richtigen Folgeschritt, ist sie nicht falsch. Durchgestrichenes und Gekritzel ignorierst du für die Mathematik vollständig.',
     '- Gib das Endergebnis so wieder, wie es auf dem Blatt steht (studentValue), ohne es zu korrigieren.',
     '- Ist das Bild leer, nicht zu entziffern, unscharf oder hat es nichts mit Mathe zu tun: readable = false mit passendem unreadableReason.',
     '- Schreibe auf Deutsch in Du-Form, sehr knapp (höchstens 10 Wörter pro Kommentar), konkret und ermutigend, ohne die komplette Lösung vorzurechnen. Mathe immer in $…$ (LaTeX), auch in studentWork.',
@@ -177,7 +178,7 @@ export function buildPrompt(input: PromptInput): { system: string; user: string 
           '- Bei dieser Aufgabe gelten die Kriterien (rubric) in der erwarteten Antwort als Bewertungsgrundlage: Bewerte jeden Schritt der Schülerlösung und prüfe jedes Kriterium einzeln. Setze final.verdict nur dann auf "correct", wenn ALLE Kriterien der rubric erfüllt sind und das Endergebnis zum erwarteten Ergebnis (result der Musterlösung) passt; sonst "incorrect" (oder "missing", wenn es kein Endergebnis gibt). Gleichwertige Schreibweisen und andere richtige Lösungswege erfüllen ein Kriterium ebenfalls. Nenne im Kommentar kurz das nicht erfüllte Kriterium.',
         ]
       : []),
-    '- Beurteile zusätzlich die Darstellung getrennt von der Mathematik (presentation): Ist die Reihenfolge der Schritte nachvollziehbar, stehen die Gleichungen untereinander, oder steht alles kreuz und quer? Ist sehr viel durchgestrichen oder gekritzelt? Setze presentation.tidy nur bei deutlichen Mängeln auf false (der rote Faden ist nicht erkennbar) und gib dann in presentation.comment einen kurzen, freundlichen, konkreten Tipp in Du-Form (z. B. "Schreib die Schritte untereinander, damit man deinen Weg verfolgen kann."). Kleine Korrekturen oder ein einzelner durchgestrichener Fehler sind normal: tidy = true. Die Darstellung beeinflusst NICHT, ob Schritte oder das Ergebnis richtig oder falsch sind. Ist das Bild nicht lesbar (readable = false), bewertest du die Darstellung nicht.',
+    '- Beurteile zusätzlich die Darstellung getrennt von der Mathematik (presentation): Ist die Reihenfolge der Schritte nachvollziehbar, stehen die Gleichungen untereinander, oder steht alles kreuz und quer? Setze presentation.tidy auf false, wenn (a) viel durchgestrichen, übermalt oder gekritzelt ist, ODER (b) formal falsche Gleichungen bzw. Nebenrechnungen dastehen (falsche Gleichheitsketten, falscher Funktionsname, verkürzte Rechnungen), ODER (c) der rote Faden nicht erkennbar ist. Gib dann in presentation.comment einen kurzen, freundlichen, konkreten Tipp in Du-Form, der die Stelle nennt (z. B. "Schreib Nebenrechnungen so, dass sie stimmen: $2 - 9 = -7$ statt $-9 = -7$." oder "Nimm $g(3)$ statt $f(3)$, wenn du Punkt und Gerade g meinst." oder "Schreib die Schritte untereinander, damit man deinen Weg verfolgen kann."). Ein einzelner sauber durchgestrichener Fehler oder eine kleine Korrektur ist normal: tidy = true. Die Darstellung beeinflusst NICHT, ob Schritte oder das Ergebnis richtig oder falsch sind. Ist das Bild nicht lesbar (readable = false), bewertest du die Darstellung nicht.',
     '- Antworte ausschließlich im vorgegebenen JSON-Format.',
   ].join('\n')
 

@@ -382,6 +382,34 @@ describe('step-by-step praise and missing result', () => {
   })
 })
 
+describe('notation vs. content errors', () => {
+  const sys = buildPrompt({ type: 'handwritten', prompt: 'x', answer: {}, solution: {} }).system
+
+  it('prompt reserves "incorrect" for content errors and routes notation to presentation', () => {
+    expect(sys).toContain('AUSSCHLIESSLICH für inhaltliche Fehler')
+    expect(sys).toContain('KEIN Fehler')
+    expect(sys).toContain('f(3) statt g(3)')
+    expect(sys).toContain('formal falsche Gleichungen')
+    expect(sys).toContain('$2 - 9 = -7$ statt $-9 = -7$')
+    expect(sys).toContain('ignorierst du für die Mathematik')
+  })
+
+  it('stays correct with right result, notation-only (unclear) steps and a presentation tip', () => {
+    const f = feedback({
+      presentation: { tidy: false, comment: 'Nebenrechnung korrekt schreiben.' },
+    })
+    f.steps[0]!.verdict = 'unclear'
+    const out = evaluateFeedback(f, { type: 'numeric', answer })
+    expect(out).toMatchObject({ correct: true, presentation: { tidy: false } })
+  })
+
+  it('real content errors stay wrong', () => {
+    const f = feedback({ final: { studentValue: '5 m', verdict: 'incorrect', comment: '' } })
+    f.steps[1]!.verdict = 'incorrect'
+    expect(evaluateFeedback(f, { type: 'numeric', answer })).toMatchObject({ correct: false })
+  })
+})
+
 describe('presentation (tidiness)', () => {
   const raw = (presentation: unknown) => ({
     readable: true,
