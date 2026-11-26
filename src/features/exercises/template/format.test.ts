@@ -1,4 +1,13 @@
-import { formatNumber, renderText, singlePlaceholder } from './format'
+import {
+  formatNumber,
+  renderText,
+  singlePlaceholder,
+  texCoef,
+  texParen,
+  texSignedTimes,
+  texSignedTerm,
+  texTimes,
+} from './format'
 
 describe('formatNumber', () => {
   it('uses a German decimal comma and removes float noise', () => {
@@ -42,5 +51,45 @@ describe('renderText', () => {
   it('detects single placeholders', () => {
     expect(singlePlaceholder('{{ a/2 }}')).toBe('a/2')
     expect(singlePlaceholder('a = {{a}}')).toBeNull()
+  })
+})
+
+describe('coefficient helpers', () => {
+  it('texCoef omits 1 and writes -1 as a bare minus', () => {
+    expect(texCoef(1)).toBe('')
+    expect(texCoef(-1)).toBe('-')
+    expect(texCoef(3)).toBe('3')
+    expect(texCoef(-2.5)).toBe('-2{,}5')
+  })
+
+  it('texTimes never writes a factor 1', () => {
+    expect(texTimes(1, 3)).toBe('3')
+    expect(texTimes(1, -3)).toBe('-3')
+    expect(texTimes(-1, 3)).toBe('-3')
+    expect(texTimes(-1, -3)).toBe('-(-3)')
+    expect(texTimes(2, 3)).toBe('2 \\cdot 3')
+    expect(texTimes(2, -3)).toBe('2 \\cdot (-3)')
+    expect(texTimes(-2, 0.5)).toBe('-2 \\cdot 0{,}5')
+  })
+
+  it('texSignedTerm builds terms without "+ -" and "1x"', () => {
+    expect(texSignedTerm(3, 'x')).toBe('+ 3x')
+    expect(texSignedTerm(-3, 'x')).toBe('- 3x')
+    expect(texSignedTerm(1, 'x')).toBe('+ x')
+    expect(texSignedTerm(-1, 'y')).toBe('- y')
+    expect(texSignedTerm(1.5, 'y')).toBe('+ 1{,}5y')
+  })
+
+  it('texParen brackets negative values only', () => {
+    expect(texParen(3)).toBe('3')
+    expect(texParen(-3)).toBe('(-3)')
+    expect(texParen(-0.5)).toBe('(-0{,}5)')
+  })
+
+  it('texSignedTimes signs by coefficient and brackets negative values', () => {
+    expect(texSignedTimes(1, -3)).toBe('+ (-3)')
+    expect(texSignedTimes(-1, 3)).toBe('- 3')
+    expect(texSignedTimes(-4, -3)).toBe('- 4 \\cdot (-3)')
+    expect(texSignedTimes(2, 3)).toBe('+ 2 \\cdot 3')
   })
 })

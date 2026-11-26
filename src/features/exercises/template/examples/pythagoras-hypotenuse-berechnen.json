@@ -26,8 +26,8 @@
         }
       },
       "derived": {
-        "A": "[3, 6, 5, 9, 8, 12, 7, 15, 18, 30, 60][k]",
-        "B": "[4, 8, 12, 12, 15, 16, 24, 20, 24, 40, 80][k]",
+        "A": "[3, 6, 5, 9, 8, 12, 50, 15, 90, 30, 60][k]",
+        "B": "[4, 8, 12, 12, 15, 16, 120, 20, 120, 40, 80][k]",
         "a": "swap == 0 ? A : B",
         "b": "swap == 0 ? B : A",
         "c2": "a^2 + b^2",
@@ -74,7 +74,7 @@
       },
       "solution": {
         "steps": [
-          "Die Hypotenuse $c$ liegt dem rechten Winkel gegenüber. Nach dem Satz des Pythagoras gilt $c^2 = a^2 + b^2$.",
+          "Satz des Pythagoras (Hypotenuse $c$ liegt dem rechten Winkel gegenüber): $c^2 = a^2 + b^2$",
           "Einsetzen: $c^2 = {{a}}^2 + {{b}}^2 = {{a^2}} + {{b^2}} = {{c2}}$",
           "Wurzel ziehen: $c = \\sqrt{ {{c2}} } = {{c}}$"
         ],
@@ -97,33 +97,33 @@
         }
       },
       "derived": {
-        "a": "[3, 6, 5, 9, 8, 12, 7, 15, 18, 30, 60][k]",
-        "b": "[4, 8, 12, 12, 15, 16, 24, 20, 24, 40, 80][k]",
+        "a": "[3, 6, 5, 9, 8, 12, 50, 15, 90, 30, 60][k]",
+        "b": "[4, 8, 12, 12, 15, 16, 120, 20, 120, 40, 80][k]",
         "c2": "a^2 + b^2",
-        "c": "sqrt(c2)",
-        "wrongMinus": "round(sqrt(b^2 - a^2))"
+        "c": "sqrt(c2)"
       },
       "contexts": [
         {
           "id": "welche-laenge",
-          "prompt": "Ein rechtwinkliges Dreieck hat die Katheten $a = {{a}}\\,\\text{cm}$ und $b = {{b}}\\,\\text{cm}$. Wie lang ist die Hypotenuse $c$?"
+          "prompt": "Ein rechtwinkliges Dreieck hat die Katheten $a = {{a}}\\,\\text{cm}$ und $b = {{b}}\\,\\text{cm}$. Berechne die Länge der Hypotenuse $c$."
         },
         {
           "id": "richtiges-ergebnis",
-          "prompt": "Die Katheten eines rechtwinkligen Dreiecks sind ${{a}}\\,\\text{cm}$ und ${{b}}\\,\\text{cm}$ lang. Welches Ergebnis für die Hypotenuse ist richtig?"
+          "prompt": "Die Katheten eines rechtwinkligen Dreiecks sind ${{a}}\\,\\text{cm}$ und ${{b}}\\,\\text{cm}$ lang. Berechne die Länge der Hypotenuse."
         }
       ],
       "answer": {
-        "type": "multiple_choice",
-        "correct": "{{c}} cm",
-        "distractors": ["{{a + b}} cm", "{{a^2 + b^2}} cm", "{{wrongMinus}} cm"]
+        "type": "numeric",
+        "value": "c",
+        "tolerance": "0",
+        "unit": "cm"
       },
       "solution": {
         "steps": [
-          "Nach dem Satz des Pythagoras gilt $c^2 = a^2 + b^2$.",
+          "Satz des Pythagoras (Hypotenuse $c$ liegt dem rechten Winkel gegenüber): $c^2 = a^2 + b^2$",
           "Einsetzen: $c^2 = {{a}}^2 + {{b}}^2 = {{a^2}} + {{b^2}} = {{c2}}$",
           "Wurzel ziehen: $c = \\sqrt{ {{c2}} } = {{c}}$",
-          "Typische Fehler: die Seiten einfach addieren ({{a + b}}), die Wurzel vergessen ({{c2}}) oder die Quadrate subtrahieren statt addieren (etwa {{wrongMinus}})."
+          "Achtung: Nach dem Quadrieren und Addieren ist $c^2$ berechnet, noch nicht $c$ – die Wurzel nicht vergessen."
         ],
         "result": "$c = {{c}}\\,\\text{cm}$"
       },
@@ -202,10 +202,10 @@
       },
       "solution": {
         "steps": [
-          "Gesucht ist die Seite gegenüber dem rechten Winkel, also die Hypotenuse $c$. Es gilt $c^2 = a^2 + b^2$.",
+          "Satz des Pythagoras (Hypotenuse $c$ liegt dem rechten Winkel gegenüber): $c^2 = a^2 + b^2$",
           "Einsetzen: $c^2 = {{a}}^2 + {{b}}^2 = {{a^2}} + {{b^2}} = {{c2}}$",
           "Wurzel ziehen: $c = \\sqrt{ {{c2}} } \\approx {{c:3}}$",
-          "Auf eine Nachkommastelle (Millimeter) runden: $c \\approx {{cr:1}}\\,\\text{cm}$"
+          "Auf eine Nachkommastelle runden: $c \\approx {{cr:1}}\\,\\text{cm}$"
         ],
         "result": "$c \\approx {{cr:1}}\\,\\text{cm}$"
       },
@@ -256,8 +256,9 @@
       },
       "solution": {
         "steps": [
-          "Zuerst gleiche Einheiten: $b = {{bmm}}\\,\\text{mm} = {{b}}\\,\\text{cm}$",
-          "Nach dem Satz des Pythagoras gilt $c^2 = a^2 + b^2$, also $c^2 = {{a}}^2 + {{b}}^2 = {{a^2}} + {{b^2}} = {{c2}}$",
+          "Gleiche Einheiten: $b = {{bmm}}\\,\\text{mm} = {{b}}\\,\\text{cm}$",
+          "Satz des Pythagoras (Hypotenuse $c$ liegt dem rechten Winkel gegenüber): $c^2 = a^2 + b^2$",
+          "Einsetzen: $c^2 = {{a}}^2 + {{b}}^2 = {{a^2}} + {{b^2}} = {{c2}}$",
           "Wurzel ziehen: $c = \\sqrt{ {{c2}} } \\approx {{c:3}}$",
           "Runden: $c \\approx {{cr:1}}\\,\\text{cm}$"
         ],
@@ -341,11 +342,12 @@
       },
       "solution": {
         "steps": [
-          "Zuerst gleiche Einheiten: ${{bmm}}\\,\\text{mm} = {{b}}\\,\\text{cm}$",
+          "Gleiche Einheiten: ${{bmm}}\\,\\text{mm} = {{b}}\\,\\text{cm}$",
           "Die Diagonale $d$ teilt das Rechteck in zwei rechtwinklige Dreiecke. Die Seiten ${{a}}\\,\\text{cm}$ und ${{b}}\\,\\text{cm}$ sind die Katheten, die Diagonale ist die Hypotenuse.",
-          "Satz des Pythagoras: $d^2 = {{a}}^2 + {{b}}^2 = {{a^2}} + {{b^2}} = {{c2}}$",
+          "Satz des Pythagoras (Hypotenuse $d$ liegt dem rechten Winkel gegenüber): $d^2 = a^2 + b^2$",
+          "Einsetzen: $d^2 = {{a}}^2 + {{b}}^2 = {{a^2}} + {{b^2}} = {{c2}}$",
           "Wurzel ziehen: $d = \\sqrt{ {{c2}} } \\approx {{c:3}}$",
-          "Runden: $d \\approx {{cr:1}}\\,\\text{cm}$"
+          "Auf eine Nachkommastelle runden: $d \\approx {{cr:1}}\\,\\text{cm}$"
         ],
         "result": "$d \\approx {{cr:1}}\\,\\text{cm}$"
       },

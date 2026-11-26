@@ -1,6 +1,17 @@
 import { all, create } from 'mathjs'
 import { exerciseDraftFileSchema, type Exercise } from '../schema'
-import { renderText, singlePlaceholder, texFraction, texNumber, texSigned } from './format'
+import {
+  renderText,
+  singlePlaceholder,
+  texCoef,
+  texFraction,
+  texNumber,
+  texSigned,
+  texParen,
+  texSignedTerm,
+  texSignedTimes,
+  texTimes,
+} from './format'
 import { exerciseTemplateSchema, type ExerciseTemplate, type TemplateLevel } from './schema'
 
 // Restricted mathjs instance: templates may compute, but not redefine the parser or units.
@@ -10,12 +21,18 @@ const blocked = () => {
   throw new Error('function disabled in templates')
 }
 // Text helpers for placeholders (return LaTeX strings): tex(2.5) → "2{,}5", frac(8/3) → "\frac{8}{3}",
-// signed(-3) → "- 3" (for building terms like "x {{signed(b)}}").
+// signed(-3) → "- 3" (for building terms like "x {{signed(b)}}"), coef(1) → "", coef(-1) → "-",
+// times(a, x) → coefficient times value without "1 \cdot", signedTerm(a, "x") → "+ 3x" / "- x".
 math.import(
   {
     tex: (x: number) => texNumber(x),
     frac: (x: number) => texFraction(x),
     signed: (x: number) => texSigned(x),
+    coef: (a: number) => texCoef(a),
+    times: (a: number, x: number) => texTimes(a, x),
+    signedTerm: (a: number, variable: string) => texSignedTerm(a, variable),
+    signedTimes: (a: number, x: number) => texSignedTimes(a, x),
+    paren: (x: number) => texParen(x),
   },
   { override: true },
 )
@@ -169,7 +186,10 @@ export function generateExercises(input: unknown, options: GenerateOptions = {})
             : renderDiagram(context.diagram, render, evaluate),
         hints: level.hints?.map(render),
         solution: {
-          steps: level.solution.steps.map((s) => ({ text: render(s) })),
+          steps: level.solution.steps
+            .filter((s) => typeof s === 'string' || evaluateWhen(s.when, evaluate))
+            .map((s) => render(typeof s === 'string' ? s : s.text))
+            .map((text) => ({ text })),
           result: render(level.solution.result),
         },
         inspiration: `Generiert aus Vorlage "${template.id}", Stufe "${level.id}", Seed ${seed}. Eigene Formulierung und Zahlen.`,
@@ -188,6 +208,14 @@ export function generateExercises(input: unknown, options: GenerateOptions = {})
 
   // Final validation against the regular draft schema (same as hand-written exercises).
   return exerciseDraftFileSchema.parse({ exercises }).exercises
+}
+
+function evaluateWhen(when: string, evaluate: (e: string) => unknown): boolean {
+  const value = evaluate(when)
+  if (typeof value !== 'boolean') {
+    throw new Error(`step condition "${when}" must evaluate to true/false, got ${typeof value}`)
+  }
+  return value
 }
 
 function buildAnswer(

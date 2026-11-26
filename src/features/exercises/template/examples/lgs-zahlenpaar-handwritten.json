@@ -10,14 +10,19 @@
     "det": "a1 * b2 - a2 * b1",
     "c1": "a1 * x + b1 * y",
     "c2": "a2 * x + b2 * y",
+    "f": "-b2 / b1",
+    "k": "f * a1 + a2",
+    "r": "f * c1 + c2",
     "xs": "(c1 * b2 - c2 * b1) / det",
     "ys": "(a1 * c2 - a2 * c1) / det"
   },
-  "constraints": ["det != 0", "x != y"],
+  "constraints": ["det != 0", "x != y", "mod(b2, b1) == 0"],
   "checks": [
     "a1 * xs + b1 * ys == c1",
     "a2 * xs + b2 * ys == c2",
-    "abs(xs - x) < 1e-9 and abs(ys - y) < 1e-9"
+    "abs(xs - x) < 1e-9 and abs(ys - y) < 1e-9",
+    "f * b1 + b2 == 0",
+    "k * x == r"
   ],
   "levels": [
     {
@@ -33,11 +38,11 @@
       "contexts": [
         {
           "id": "zahlenpaar",
-          "prompt": "Löse das Gleichungssystem und gib das Lösungspaar $(x\\,|\\,y)$ an.\n\n$$\\begin{aligned} \\text{I:}\\quad & {{a1}}x {{signed(b1)}}y = {{c1}} \\\\ \\text{II:}\\quad & {{a2}}x {{signed(b2)}}y = {{c2}} \\end{aligned}$$"
+          "prompt": "Löse das Gleichungssystem und gib das Lösungspaar $(x\\,|\\,y)$ an.\n\n$$\\begin{aligned} \\text{I:}\\quad & {{coef(a1)}}x {{signedTerm(b1, 'y')}} = {{c1}} \\\\ \\text{II:}\\quad & {{coef(a2)}}x {{signedTerm(b2, 'y')}} = {{c2}} \\end{aligned}$$"
         },
         {
           "id": "mit-probe",
-          "prompt": "Bestimme die Lösung des Systems und mache die Probe in beiden Gleichungen.\n\n$$\\begin{aligned} \\text{I:}\\quad & {{a1}}x {{signed(b1)}}y = {{c1}} \\\\ \\text{II:}\\quad & {{a2}}x {{signed(b2)}}y = {{c2}} \\end{aligned}$$"
+          "prompt": "Bestimme die Lösung des Systems und mache die Probe in beiden Gleichungen.\n\n$$\\begin{aligned} \\text{I:}\\quad & {{coef(a1)}}x {{signedTerm(b1, 'y')}} = {{c1}} \\\\ \\text{II:}\\quad & {{coef(a2)}}x {{signedTerm(b2, 'y')}} = {{c2}} \\end{aligned}$$"
         }
       ],
       "answer": {
@@ -51,12 +56,27 @@
       },
       "solution": {
         "steps": [
-          "Eine Variable eliminieren, z. B. durch Multiplizieren der Gleichungen mit passenden Faktoren und anschließendes Addieren oder Subtrahieren.",
-          "Die Lösung der entstandenen Gleichung ergibt $x = {{x}}$.",
-          "Einsetzen in Gleichung I: ${{a1}} \\cdot {{x}} {{signed(b1)}} y = {{c1}}$ ergibt $y = {{y}}$.",
-          "Probe in II: ${{a2}} \\cdot ({{x}}) {{signed(b2)}} \\cdot ({{y}}) = {{c2}}$ stimmt."
+          "Ziel: Vor $y$ sollen Gegenzahlen stehen.",
+          {
+            "text": "I mit ${{f}}$ multiplizieren (beide Seiten): I′: ${{coef(f * a1)}}x {{signedTerm(f * b1, 'y')}} = {{f * c1}}$",
+            "when": "f != 1"
+          },
+          {
+            "text": "I + II: ${{coef(k)}}x = {{c1}} {{signed(c2)}} = {{r}}$",
+            "when": "f == 1"
+          },
+          {
+            "text": "I′ + II: ${{coef(k)}}x = {{f * c1}} {{signed(c2)}} = {{r}}$",
+            "when": "f != 1"
+          },
+          {
+            "text": "Durch ${{k}}$ teilen: $x = {{r}} : {{paren(k)}} = {{x}}$",
+            "when": "k != 1"
+          },
+          "$x = {{x}}$ in I einsetzen: ${{times(a1, x)}} {{signedTerm(b1, 'y')}} = {{c1}}$, also $y = {{y}}$",
+          "Probe in II: ${{times(a2, x)}} {{signedTimes(b2, y)}} = {{c2}}$ ✓"
         ],
-        "result": "$({{x}}\\,|\\,{{y}})$"
+        "result": "$L = \\{({{x}}\\,|\\,{{y}})\\}$"
       },
       "hints": [
         "Multipliziere eine Gleichung so, dass bei $x$ oder $y$ gegensätzliche oder gleiche Koeffizienten stehen.",
@@ -69,14 +89,14 @@
       "count": 4,
       "params": {
         "a1": { "values": [3, 5, 7] },
-        "b1": { "values": [-5, -3, 3, 5] },
+        "b1": { "values": [-3, -2, 2, 3] },
         "a2": { "values": [2, 4, 6] },
-        "b2": { "values": [-7, -5, -3, 3, 5, 7] }
+        "b2": { "values": [-9, -8, -6, -4, 4, 6, 8, 9] }
       },
       "contexts": [
         {
           "id": "zahlenpaar",
-          "prompt": "Löse das Gleichungssystem mit einem Verfahren deiner Wahl. Gib das Lösungspaar an.\n\n$$\\begin{aligned} \\text{I:}\\quad & {{a1}}x {{signed(b1)}}y = {{c1}} \\\\ \\text{II:}\\quad & {{a2}}x {{signed(b2)}}y = {{c2}} \\end{aligned}$$"
+          "prompt": "Löse das Gleichungssystem mit einem Verfahren deiner Wahl. Gib das Lösungspaar an.\n\n$$\\begin{aligned} \\text{I:}\\quad & {{coef(a1)}}x {{signedTerm(b1, 'y')}} = {{c1}} \\\\ \\text{II:}\\quad & {{coef(a2)}}x {{signedTerm(b2, 'y')}} = {{c2}} \\end{aligned}$$"
         }
       ],
       "answer": {
@@ -89,11 +109,27 @@
       },
       "solution": {
         "steps": [
-          "Gleichungen so erweitern, dass eine Variable beim Addieren oder Subtrahieren wegfällt.",
-          "Die verbleibende Gleichung ergibt $x = {{x}}$.",
-          "Einsetzen in Gleichung I ergibt $y = {{y}}$."
+          "Ziel: Vor $y$ sollen Gegenzahlen stehen.",
+          {
+            "text": "I mit ${{f}}$ multiplizieren (beide Seiten): I′: ${{coef(f * a1)}}x {{signedTerm(f * b1, 'y')}} = {{f * c1}}$",
+            "when": "f != 1"
+          },
+          {
+            "text": "I + II: ${{coef(k)}}x = {{c1}} {{signed(c2)}} = {{r}}$",
+            "when": "f == 1"
+          },
+          {
+            "text": "I′ + II: ${{coef(k)}}x = {{f * c1}} {{signed(c2)}} = {{r}}$",
+            "when": "f != 1"
+          },
+          {
+            "text": "Durch ${{k}}$ teilen: $x = {{r}} : {{paren(k)}} = {{x}}$",
+            "when": "k != 1"
+          },
+          "$x = {{x}}$ in I einsetzen: ${{times(a1, x)}} {{signedTerm(b1, 'y')}} = {{c1}}$, also $y = {{y}}$",
+          "Probe in II: ${{times(a2, x)}} {{signedTimes(b2, y)}} = {{c2}}$ ✓"
         ],
-        "result": "$({{x}}\\,|\\,{{y}})$"
+        "result": "$L = \\{({{x}}\\,|\\,{{y}})\\}$"
       }
     }
   ]

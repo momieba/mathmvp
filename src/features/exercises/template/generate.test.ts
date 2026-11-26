@@ -159,7 +159,21 @@ describe('generateExercises – handwritten example (LGS, Lösungspaar)', () => 
       if (e.type !== 'handwritten') continue
       expect(e.answer.rubric.length).toBeGreaterThanOrEqual(3)
       expect(e.answer.rubric.join(' ')).not.toContain('{{')
-      expect(e.solution.result).toMatch(/^\$\(-?\d+\\,\|\\,-?\d+\)\$$/)
+      expect(e.solution.result).toMatch(/^\$L = \\\{\(-?\d+\\,\|\\,-?\d+\)\\\}\$$/)
+    }
+  })
+
+  it('follows the R8/R5 step scheme without "1 \\cdot" or "+ -"', () => {
+    for (const e of exercises) {
+      const steps = e.solution.steps.map((s) => s.text)
+      expect(steps[0]).toBe('Ziel: Vor $y$ sollen Gegenzahlen stehen.')
+      expect(steps.some((s) => /^I′? [+] II: /.test(s))).toBe(true)
+      expect(steps.at(-2)).toMatch(/^\$x = -?\d+\$ in I einsetzen: .*, also \$y = -?\d+\$$/)
+      expect(steps.at(-1)).toMatch(/^Probe in II: .* ✓$/)
+      for (const s of steps) {
+        expect(s).not.toMatch(/(^|[^\d])1 \\cdot|\+ -|\$1x|[+-] 1[xy]/)
+        if (s.startsWith('Durch ')) expect(s).not.toMatch(/^Durch \$1\$/)
+      }
     }
   })
 
@@ -291,5 +305,63 @@ describe('generateExercises – keys stay stable when a level changes type (--fo
       'handwritten',
       'handwritten',
     ])
+  })
+})
+
+describe('generateExercises – placeholder helpers and optional steps', () => {
+  const template = {
+    id: 'opt',
+    subtopic: 'opt',
+    placements: [{ state: 'NW', schoolType: 'gymnasium', grade: 8 }],
+    checks: ['k * x == r'],
+    levels: [
+      {
+        id: 'l1',
+        difficulty: 'leicht',
+        count: 4,
+        params: { k: { values: [1, -1, 2, -3] }, x: { values: [4] } },
+        derived: { r: 'k * x' },
+        uniqueBy: 'k',
+        contexts: [{ id: 'c', prompt: '${{coef(k)}}x = {{r}}$' }],
+        answer: { type: 'numeric', value: 'x' },
+        solution: {
+          steps: [
+            'Ansatz: ${{coef(k)}}x = {{r}}$',
+            { text: 'Durch ${{k}}$ teilen: $x = {{x}}$', when: 'k != 1' },
+            '${{r}} {{signedTerm(k, "x")}}$',
+            'Probe: ${{times(k, x)}} = {{r}}$',
+          ],
+          result: '$x = {{x}}$',
+        },
+      },
+    ],
+  }
+
+  it('drops steps whose condition is false, keeps order and keys', () => {
+    const list = generateExercises(template)
+    expect(list.map((e) => e.key)).toEqual(['opt-001', 'opt-002', 'opt-003', 'opt-004'])
+    const byK = Object.fromEntries(list.map((e) => [e.prompt, e.solution.steps.map((s) => s.text)]))
+    expect(byK['$x = 4$']).toEqual(['Ansatz: $x = 4$', '$4 + x$', 'Probe: $4 = 4$'])
+    expect(byK['$-x = -4$']).toEqual([
+      'Ansatz: $-x = -4$',
+      'Durch $-1$ teilen: $x = 4$',
+      '$-4 - x$',
+      'Probe: $-4 = -4$',
+    ])
+    expect(byK['$2x = 8$']).toContain('Probe: $2 \\cdot 4 = 8$')
+  })
+
+  it('does not change the other output when conditions are added (determinism)', () => {
+    const plain = structuredClone(template) as typeof template
+    plain.levels[0]!.solution.steps = ['Ansatz: ${{coef(k)}}x = {{r}}$']
+    const a = generateExercises(template).map((e) => [e.key, e.prompt])
+    const b = generateExercises(plain).map((e) => [e.key, e.prompt])
+    expect(a).toEqual(b)
+  })
+
+  it('rejects a non-boolean condition', () => {
+    const bad = structuredClone(template) as typeof template
+    bad.levels[0]!.solution.steps = [{ text: 'x', when: 'k' }]
+    expect(() => generateExercises(bad)).toThrow(/true\/false/)
   })
 })

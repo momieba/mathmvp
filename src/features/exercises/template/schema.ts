@@ -63,6 +63,12 @@ export const templateContextSchema = z.object({
   diagram: z.unknown().optional(),
 })
 
+/**
+ * Solution step: plain text template, or `{ text, when }` – the step only appears if the mathjs
+ * expression `when` is true for the sample (e.g. "k != 1" for "Durch k teilen").
+ */
+export const templateStepSchema = z.union([text, z.object({ text, when: expr })])
+
 export const templateLevelSchema = z.object({
   id: slugSchema,
   difficulty: difficultySchema,
@@ -76,7 +82,7 @@ export const templateLevelSchema = z.object({
   uniqueBy: expr.optional(),
   contexts: z.array(templateContextSchema).min(1),
   answer: templateAnswerSchema,
-  solution: z.object({ steps: z.array(text).min(1), result: text }),
+  solution: z.object({ steps: z.array(templateStepSchema).min(1), result: text }),
   hints: z.array(text).optional(),
 })
 

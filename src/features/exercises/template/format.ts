@@ -46,6 +46,45 @@ export function texSigned(value: number) {
   return `${value < 0 ? '-' : '+'} ${texNumber(Math.abs(value))}`
 }
 
+/** Coefficient in front of a variable: 1 → "", -1 → "-", otherwise the number (3 → "3", 2.5 → "2{,}5"). */
+export function texCoef(a: number) {
+  if (a === 1) return ''
+  if (a === -1) return '-'
+  return texNumber(a)
+}
+
+/**
+ * Coefficient times inserted value, never "1 \cdot": a = 1 → value, a = -1 → "-" + value,
+ * otherwise `a \cdot x`. A negative inserted value gets parentheses where needed
+ * (a = -1 and the `\cdot` form); with a = 1 it stays bare ("-3"), so use it after "=" or at the start of a term.
+ */
+export function texTimes(a: number, x: number) {
+  const value = texParen(x)
+  if (a === 1) return texNumber(x)
+  if (a === -1) return `-${value}`
+  return `${texNumber(a)} \\cdot ${value}`
+}
+
+/** Value in parentheses if negative: 3 → "3", -3 → "(-3)" (for "x : (-3)", "y - (-2)"). */
+export function texParen(x: number) {
+  return x < 0 ? `(${texNumber(x)})` : texNumber(x)
+}
+
+/**
+ * Like `texSignedTerm` for inserted values (checks/Probe): sign of `a`, then |a| times `x` without "1 cdot":
+ * (2, 3) → "+ 2 cdot 3", (-4, -3) → "- 4 cdot (-3)", (-1, 3) → "- 3", (1, -3) → "+ (-3)".
+ */
+export function texSignedTimes(a: number, x: number) {
+  const abs = Math.abs(a)
+  return `${a < 0 ? '-' : '+'} ${abs === 1 ? texParen(x) : texTimes(abs, x)}`
+}
+
+/** Term with explicit sign for building sums: (3, "x") → "+ 3x", (-1, "y") → "- y", (1, "x") → "+ x". */
+export function texSignedTerm(a: number, variable: string) {
+  const abs = Math.abs(a)
+  return `${a < 0 ? '-' : '+'} ${abs === 1 ? '' : texNumber(abs)}${variable}`
+}
+
 const PLACEHOLDER = /\{\{\s*([^}:]+?)\s*(?::\s*(\d+)\s*)?\}\}/g
 
 /** Whether position `index` of `template` lies inside `$…$` / `$$…$$` math. */
