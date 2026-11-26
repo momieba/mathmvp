@@ -8,6 +8,7 @@ import {
   type GradedStep,
   type HandwritingResult,
   type PracticeExercise,
+  type Presentation,
   type SubmitResult,
   type UnreadableReason,
 } from '../api'
@@ -39,6 +40,7 @@ export type ExamTaskResult = {
     summary: string
     steps: GradedStep[]
     final: Extract<HandwritingResult, { status: 'graded' }>['final']
+    presentation?: Presentation | null
   } | null
   reference: SubmitResult['answer']
   solution: SubmitResult['solution']

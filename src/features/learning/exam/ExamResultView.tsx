@@ -162,6 +162,7 @@ function TaskResult({
               steps: task.feedback.steps,
               final: task.feedback.final,
               summary: task.feedback.summary,
+              presentation: task.feedback.presentation,
               answer: task.reference,
               solution: task.solution,
             }}

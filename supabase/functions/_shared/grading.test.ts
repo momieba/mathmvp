@@ -1,5 +1,6 @@
 import {
   DEFAULT_LIMITS,
+  FEEDBACK_SCHEMA,
   buildPrompt,
   checkNumericValue,
   detectImageMime,
@@ -27,6 +28,7 @@ const feedback = (over: Partial<ModelFeedback> = {}): ModelFeedback => ({
   ],
   final: { studentValue: '4 m', verdict: 'correct', comment: 'Stimmt.' },
   summary: 'Gut gerechnet.',
+  presentation: null,
   ...over,
 })
 
@@ -377,5 +379,54 @@ describe('step-by-step praise and missing result', () => {
       correct: false,
       final: { verdict: 'missing' },
     })
+  })
+})
+
+describe('presentation (tidiness)', () => {
+  const raw = (presentation: unknown) => ({
+    readable: true,
+    steps: [{ studentWork: '$x = 1$', verdict: 'correct', comment: 'ok', referenceStep: 1 }],
+    final: { studentValue: '1', verdict: 'correct', comment: '' },
+    summary: '',
+    presentation,
+  })
+
+  it('is part of the prompt and the schema, separate from the maths', () => {
+    const p = buildPrompt({ type: 'handwritten', prompt: 'x', answer: {}, solution: {} })
+    expect(p.system).toContain('presentation.tidy')
+    expect(p.system).toContain('beeinflusst NICHT')
+    expect(FEEDBACK_SCHEMA.properties.presentation.required).toEqual(['tidy', 'comment'])
+  })
+
+  it('parses tidy true/false, drops missing or broken values and caps the tip', () => {
+    const tip = normalizeModelFeedback(raw({ tidy: false, comment: ' Schreib untereinander. ' }))
+    expect(tip?.presentation).toEqual({ tidy: false, comment: 'Schreib untereinander.' })
+    expect(normalizeModelFeedback(raw({ tidy: true, comment: 'x' }))?.presentation).toEqual({
+      tidy: true,
+      comment: '',
+    })
+    expect(normalizeModelFeedback(raw(undefined))?.presentation).toBeNull()
+    expect(normalizeModelFeedback(raw('kaputt'))?.presentation).toBeNull()
+    expect(normalizeModelFeedback(raw({ tidy: 'no', comment: 'x' }))?.presentation).toBeNull()
+    const long = normalizeModelFeedback(raw({ tidy: false, comment: 'a'.repeat(900) }))
+    expect(long?.presentation?.comment.length).toBe(200)
+  })
+
+  it('does not influence correct', () => {
+    const ctx = { type: 'handwritten', answer: {} }
+    const messy = { tidy: false, comment: 'Schreib untereinander.' }
+    const a = evaluateFeedback(feedback({ presentation: messy }), ctx)
+    const b = evaluateFeedback(feedback({ presentation: null }), ctx)
+    expect(a.status === 'graded' && a.correct).toBe(true)
+    expect(a.status === 'graded' && b.status === 'graded' && a.correct === b.correct).toBe(true)
+    expect(a.status === 'graded' && a.presentation).toEqual(messy)
+  })
+
+  it('unreadable stays its own state without a tip', () => {
+    const out = evaluateFeedback(
+      feedback({ readable: false, presentation: { tidy: false, comment: 'x' } }),
+      { type: 'handwritten', answer: {} },
+    )
+    expect(out.status).toBe('unreadable')
   })
 })

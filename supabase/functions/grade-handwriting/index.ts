@@ -300,7 +300,13 @@ Deno.serve(async (req) => {
       answer: { kind },
       correct: outcome.correct,
       points,
-      feedback: { summary: outcome.summary, steps: outcome.steps, final: outcome.final, model },
+      feedback: {
+        summary: outcome.summary,
+        steps: outcome.steps,
+        final: outcome.final,
+        presentation: outcome.presentation,
+        model,
+      },
       answered_at: new Date().toISOString(),
     })
     if (error) {
@@ -324,6 +330,7 @@ Deno.serve(async (req) => {
       summary: outcome.summary,
       steps: outcome.steps,
       final: outcome.final,
+      presentation: outcome.presentation,
       model,
     },
   })
@@ -342,6 +349,7 @@ Deno.serve(async (req) => {
     steps: outcome.steps,
     final: outcome.final,
     summary: outcome.summary,
+    presentation: outcome.presentation,
     answer: solution.answer,
     solution: solution.solution,
   })

@@ -42,6 +42,21 @@ describe('HandwritingNotes', () => {
     expect(screen.getByText(/Nicht ganz/)).toBeInTheDocument()
     expect(screen.queryByText(/Fast geschafft/)).toBeNull()
   })
+
+  it('shows the yellow presentation tip only for tidy = false', () => {
+    const tip = { tidy: false, comment: 'Schreib die Schritte untereinander.' }
+    const { rerender } = render(<HandwritingNotes result={{ ...base, presentation: tip }} />)
+    expect(screen.getByText('Tipp zur Darstellung')).toBeInTheDocument()
+    expect(screen.getByText('Schreib die Schritte untereinander.')).toBeInTheDocument()
+    rerender(<HandwritingNotes result={{ ...base, correct: true, presentation: tip }} />)
+    expect(screen.getByText('Tipp zur Darstellung')).toBeInTheDocument()
+    rerender(<HandwritingNotes result={{ ...base, presentation: { tidy: true, comment: '' } }} />)
+    expect(screen.queryByText('Tipp zur Darstellung')).toBeNull()
+    rerender(<HandwritingNotes result={{ ...base, presentation: null }} />)
+    expect(screen.queryByText('Tipp zur Darstellung')).toBeNull()
+    rerender(<HandwritingNotes result={base} />)
+    expect(screen.queryByText('Tipp zur Darstellung')).toBeNull()
+  })
 })
 
 describe('marksOf', () => {

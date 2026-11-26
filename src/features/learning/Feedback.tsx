@@ -1,3 +1,4 @@
+import { LightbulbIcon } from 'lucide-react'
 import { useId } from 'react'
 import { asMath } from '@/components/math/asMath'
 import { DiagramView } from '@/components/math/DiagramView'
@@ -50,6 +51,26 @@ function AiNote() {
 }
 
 /**
+ * Yellow highlighter tip about tidiness. Only for `tidy === false`; never affects the verdict.
+ * Icon + title + text, so it does not rely on colour.
+ */
+function PresentationTip({ presentation }: { presentation: Graded['presentation'] }) {
+  if (!presentation || presentation.tidy !== false) return null
+  return (
+    <aside
+      data-testid="presentation-tip"
+      className="bg-marker text-marker-foreground mt-3 flex gap-2 rounded-[2px] px-3 py-2 font-sans"
+    >
+      <LightbulbIcon aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
+      <div>
+        <p className="font-semibold">Tipp zur Darstellung</p>
+        <p>{presentation.comment || 'Schreib deine Schritte übersichtlich untereinander auf.'}</p>
+      </div>
+    </aside>
+  )
+}
+
+/**
  * Correction of a handwritten solution like a teacher: every step gets one short note in order –
  * check for correct ones, cross for wrong ones (underlined in the drawing with the same number),
  * question mark for unclear ones – then a closing line that tells "almost there" from "not quite".
@@ -74,6 +95,7 @@ export function HandwritingNotes({
             </>
           )}
         </MarginNote>
+        <PresentationTip presentation={result.presentation} />
         <AiNote />
       </>
     )
@@ -132,6 +154,7 @@ export function HandwritingNotes({
           </>
         )}
       </MarginNote>
+      <PresentationTip presentation={result.presentation} />
       <AiNote />
     </div>
   )

@@ -338,6 +338,8 @@ export type GradedStep = {
   box?: [number, number, number, number] | null
 }
 
+export type Presentation = { tidy: boolean; comment: string }
+
 /** Response of the grade-handwriting Edge Function. */
 export type HandwritingResult =
   | {
@@ -350,6 +352,8 @@ export type HandwritingResult =
         comment: string
       }
       summary: string
+      /** Tidiness of the writing (never affects correct/points); `tidy: false` shows a yellow tip. */
+      presentation?: Presentation | null
       answer: SubmitResult['answer']
       solution: SubmitResult['solution']
     }

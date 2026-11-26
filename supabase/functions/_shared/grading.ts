@@ -21,12 +21,17 @@ export type GradedStep = {
 
 export type Box = [number, number, number, number]
 
+/** How tidy the solution looks (separate from the maths; never affects correct/points). */
+export type Presentation = { tidy: boolean; comment: string }
+
 export type ModelFeedback = {
   readable: boolean
   unreadableReason?: UnreadableReason
   steps: GradedStep[]
   final: { studentValue: string | null; verdict: FinalVerdict; comment: string }
   summary: string
+  /** null if the model gave none or it was broken: no hint. */
+  presentation: Presentation | null
 }
 
 export type GradeOutcome =
@@ -36,6 +41,7 @@ export type GradeOutcome =
       steps: GradedStep[]
       final: ModelFeedback['final']
       summary: string
+      presentation: Presentation | null
     }
   | { status: 'unreadable'; reason: UnreadableReason }
 
@@ -112,6 +118,24 @@ export const FEEDBACK_SCHEMA = {
       description:
         'One short encouraging sentence in German (Du-form), no full solution. Name what is right first, then what is missing or wrong.',
     },
+    presentation: {
+      type: 'object',
+      description:
+        'Assessment of the presentation only (order, layout, neatness), independent of the maths',
+      properties: {
+        tidy: {
+          type: 'boolean',
+          description:
+            'false only for clear flaws: the line of thought is hard to follow (steps scattered, no recognisable order), or a lot is crossed out/scribbled. Small corrections or a single crossed-out mistake are normal: true.',
+        },
+        comment: {
+          type: 'string',
+          description:
+            'Only if tidy is false: one short, friendly, concrete tip in German, Du-form, at most 20 words (e.g. "Schreib die Schritte untereinander, damit man deinen Weg verfolgen kann."). Empty string if tidy.',
+        },
+      },
+      required: ['tidy', 'comment'],
+    },
   },
   required: ['readable', 'steps', 'final', 'summary'],
 } as const
@@ -153,6 +177,7 @@ export function buildPrompt(input: PromptInput): { system: string; user: string 
           '- Bei dieser Aufgabe gelten die Kriterien (rubric) in der erwarteten Antwort als Bewertungsgrundlage: Bewerte jeden Schritt der Schülerlösung und prüfe jedes Kriterium einzeln. Setze final.verdict nur dann auf "correct", wenn ALLE Kriterien der rubric erfüllt sind und das Endergebnis zum erwarteten Ergebnis (result der Musterlösung) passt; sonst "incorrect" (oder "missing", wenn es kein Endergebnis gibt). Gleichwertige Schreibweisen und andere richtige Lösungswege erfüllen ein Kriterium ebenfalls. Nenne im Kommentar kurz das nicht erfüllte Kriterium.',
         ]
       : []),
+    '- Beurteile zusätzlich die Darstellung getrennt von der Mathematik (presentation): Ist die Reihenfolge der Schritte nachvollziehbar, stehen die Gleichungen untereinander, oder steht alles kreuz und quer? Ist sehr viel durchgestrichen oder gekritzelt? Setze presentation.tidy nur bei deutlichen Mängeln auf false (der rote Faden ist nicht erkennbar) und gib dann in presentation.comment einen kurzen, freundlichen, konkreten Tipp in Du-Form (z. B. "Schreib die Schritte untereinander, damit man deinen Weg verfolgen kann."). Kleine Korrekturen oder ein einzelner durchgestrichener Fehler sind normal: tidy = true. Die Darstellung beeinflusst NICHT, ob Schritte oder das Ergebnis richtig oder falsch sind. Ist das Bild nicht lesbar (readable = false), bewertest du die Darstellung nicht.',
     '- Antworte ausschließlich im vorgegebenen JSON-Format.',
   ].join('\n')
 
@@ -177,6 +202,7 @@ const FINAL_VERDICTS: readonly string[] = ['correct', 'incorrect', 'missing']
 const REASONS: readonly string[] = ['empty', 'illegible', 'off_topic', 'photo_quality']
 const MAX_STEPS = 30
 const MAX_TEXT = 600
+const MAX_TIP = 200
 
 const asText = (v: unknown) => (typeof v === 'string' ? v.trim().slice(0, MAX_TEXT) : '')
 const isObject = (v: unknown): v is Record<string, unknown> =>
@@ -219,7 +245,14 @@ export function normalizeModelFeedback(raw: unknown): ModelFeedback | null {
     steps,
     final,
     summary: asText(raw.summary),
+    presentation: normalizePresentation(raw.presentation),
   }
+}
+
+/** Broken or missing → null (no hint). `tidy` must be a real boolean; the tip is capped in length. */
+export function normalizePresentation(raw: unknown): Presentation | null {
+  if (!isObject(raw) || typeof raw.tidy !== 'boolean') return null
+  return { tidy: raw.tidy, comment: raw.tidy ? '' : asText(raw.comment).slice(0, MAX_TIP) }
 }
 
 /** Accepts [ymin, xmin, ymax, xmax] in 0–1000 with a positive area; everything else → null. */
@@ -355,6 +388,7 @@ export function evaluateFeedback(
     steps: feedback.steps,
     final: { studentValue: feedback.final.studentValue, verdict: finalVerdict, comment },
     summary,
+    presentation: feedback.presentation,
   }
 }
 
