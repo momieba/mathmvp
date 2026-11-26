@@ -34,7 +34,7 @@ beforeEach(() => {
     toJSON: () => ({}),
   })
   Element.prototype.setPointerCapture = vi.fn()
-  // start height scales with the screen: 60 % of 600 px = 18 rows = 360 px
+  // sheet height scales with the screen: 2 × 600 px = 1200 px
   Object.defineProperty(window, 'innerHeight', { value: 600, configurable: true })
 })
 
@@ -132,18 +132,6 @@ describe('HandwritingCanvas', () => {
     expect(onChange).toHaveBeenLastCalledWith(true)
   })
 
-  it('can shrink the sheet again, but not over written ink', () => {
-    render(<HandwritingCanvas />)
-    expect(button('Weniger Platz')).toBeDisabled()
-    fireEvent.click(button('Mehr Platz'))
-    expect(button('Weniger Platz')).toBeEnabled()
-    draw(sheet(), 'mouse', 40, 400) // below the default 360 px
-    expect(button('Weniger Platz')).toBeDisabled()
-    fireEvent.click(button('Rückgängig'))
-    fireEvent.click(button('Weniger Platz'))
-    expect(sheet().style.height).toBe('360px')
-  })
-
   it('exports a PNG only when something was written', () => {
     const ref = createRef<HandwritingCanvasHandle>()
     render(<HandwritingCanvas ref={ref} />)
@@ -170,16 +158,104 @@ describe('HandwritingCanvas', () => {
     expect(screen.getByRole('img', { name: 'Deine abgegebene Lösung' })).toBeInTheDocument()
   })
 
-  it('starts with a bigger sheet on tall screens (tablets)', () => {
-    Object.defineProperty(window, 'innerHeight', { value: 1000, configurable: true })
+  it('has no "Mehr Platz" / "Weniger Platz" any more', () => {
     render(<HandwritingCanvas />)
-    expect(sheet().style.height).toBe('600px') // 60 % of the screen = 30 rows
+    expect(screen.queryByRole('button', { name: /Platz/ })).not.toBeInTheDocument()
   })
 
-  it('lets the sheet grow with "Mehr Platz"', () => {
+  it('is about two screen heights long, in whole Karo rows', () => {
     render(<HandwritingCanvas />)
-    expect(sheet().style.height).toBe('360px')
-    fireEvent.click(button('Mehr Platz'))
-    expect(sheet().style.height).toBe('520px')
+    expect(sheet().style.height).toBe('1200px') // 2 × 600 px
+    Object.defineProperty(window, 'innerHeight', { value: 777, configurable: true })
+    const { unmount } = render(<HandwritingCanvas />)
+    expect(screen.getAllByRole('img', { name: /Schreibfläche/ })[1]!.style.height).toBe('1560px') // ceil(1554 / 20) rows
+    unmount()
+  })
+
+  it('grows on resize (rotation) but never shrinks, so nothing written is cut off', () => {
+    render(<HandwritingCanvas />)
+    Object.defineProperty(window, 'innerHeight', { value: 900, configurable: true })
+    act(() => {
+      window.dispatchEvent(new Event('resize'))
+    })
+    expect(sheet().style.height).toBe('1800px')
+    Object.defineProperty(window, 'innerHeight', { value: 400, configurable: true })
+    act(() => {
+      window.dispatchEvent(new Event('resize'))
+    })
+    expect(sheet().style.height).toBe('1800px')
+  })
+
+  it('writes with a pen and sticks the toolbar to the viewport bottom on desktop', () => {
+    render(<HandwritingCanvas />)
+    const toolbar = screen.getByRole('group', { name: 'Zeichenwerkzeuge' })
+    expect(toolbar).toHaveClass('md:sticky', 'md:bottom-0')
+  })
+
+  describe('two-finger scroll', () => {
+    const finger = (id: number, x: number, y: number) => ({
+      pointerId: id,
+      pointerType: 'touch',
+      isPrimary: id === 1,
+      clientX: x,
+      clientY: y,
+    })
+
+    it('discards the stroke in progress and scrolls the page by the centre movement', () => {
+      const scrollBy = vi.fn()
+      window.scrollBy = scrollBy as unknown as typeof window.scrollBy
+      const onChange = vi.fn()
+      render(<HandwritingCanvas onChange={onChange} />)
+      fireEvent.pointerDown(sheet(), finger(1, 100, 300))
+      fireEvent.pointerMove(sheet(), finger(1, 110, 310)) // drawing so far
+      fireEvent.pointerDown(sheet(), finger(2, 200, 300)) // second finger: gesture
+      fireEvent.pointerMove(sheet(), finger(1, 110, 270))
+      fireEvent.pointerMove(sheet(), finger(2, 200, 270)) // centre: 305 → 270, page scrolls down by 35
+      expect(scrollBy).toHaveBeenLastCalledWith(0, expect.any(Number))
+      const total = scrollBy.mock.calls.reduce((sum, c) => sum + (c[1] as number), 0)
+      expect(total).toBe(35)
+      fireEvent.pointerUp(sheet(), finger(2, 200, 270))
+      fireEvent.pointerUp(sheet(), finger(1, 110, 270))
+      expect(onChange).toHaveBeenLastCalledWith(false) // nothing was committed
+      expect(button('Rückgängig')).toBeDisabled()
+    })
+
+    it('does not write with the remaining finger, but writes again after all fingers are up', () => {
+      window.scrollBy = vi.fn() as unknown as typeof window.scrollBy
+      const onChange = vi.fn()
+      render(<HandwritingCanvas onChange={onChange} />)
+      fireEvent.pointerDown(sheet(), finger(1, 100, 300))
+      fireEvent.pointerDown(sheet(), finger(2, 200, 300))
+      fireEvent.pointerUp(sheet(), finger(2, 200, 300))
+      fireEvent.pointerMove(sheet(), finger(1, 130, 330))
+      fireEvent.pointerUp(sheet(), finger(1, 130, 330))
+      expect(onChange).toHaveBeenLastCalledWith(false)
+      draw(sheet(), 'touch')
+      expect(onChange).toHaveBeenLastCalledWith(true)
+    })
+
+    it('keeps a pen stroke when two palm touches land', () => {
+      window.scrollBy = vi.fn() as unknown as typeof window.scrollBy
+      const onChange = vi.fn()
+      render(<HandwritingCanvas onChange={onChange} />)
+      const pen = { pointerId: 9, pointerType: 'pen', isPrimary: true, pressure: 0.5 }
+      fireEvent.pointerDown(sheet(), { ...pen, clientX: 10, clientY: 10 })
+      fireEvent.pointerDown(sheet(), finger(1, 300, 200))
+      fireEvent.pointerDown(sheet(), finger(2, 340, 200))
+      fireEvent.pointerMove(sheet(), { ...pen, clientX: 40, clientY: 20 })
+      fireEvent.pointerUp(sheet(), { ...pen, clientX: 40, clientY: 20 })
+      expect(onChange).toHaveBeenLastCalledWith(true)
+    })
+
+    it('hints at the gesture on touch devices and leaves native scrolling when locked', () => {
+      const { rerender } = render(<HandwritingCanvas />)
+      expect(screen.getByText('Mit zwei Fingern scrollen.')).toHaveClass(
+        '[@media(pointer:coarse)]:block',
+      )
+      expect(sheet().style.touchAction).toBe('none')
+      rerender(<HandwritingCanvas readOnly />)
+      expect(screen.queryByText('Mit zwei Fingern scrollen.')).not.toBeInTheDocument()
+      expect(screen.getByRole('img').style.touchAction).toBe('pan-y')
+    })
   })
 })

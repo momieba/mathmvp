@@ -1,4 +1,4 @@
-import { ChevronsDown, ChevronsUp, Eraser, Pencil, Redo2, Trash2, Undo2 } from 'lucide-react'
+import { Eraser, Pencil, Redo2, Trash2, Undo2 } from 'lucide-react'
 import {
   forwardRef,
   useCallback,
@@ -54,26 +54,22 @@ type Props = {
 export type Mark = NonNullable<Props['marks']>[number]
 
 const MIN_ROWS = 18 // Karo rows of the sheet (18 × 20 px = 360 px)
-const MORE_ROWS = 8
-/** Start height: about 60 % of the screen height (big sheet on tablets), at least MIN_ROWS. */
-const defaultRows = () =>
+const MAX_ROWS = 150 // 3000 px: keeps the backing store small enough for phones/tablets
+const SCREENS = 2 // the sheet is about two screen heights long; the page scrolls
+/** Sheet height in whole Karo rows for the current screen height. */
+const rowsForScreen = () =>
   typeof window === 'undefined'
     ? MIN_ROWS
-    : Math.min(32, Math.max(MIN_ROWS, Math.floor((window.innerHeight * 0.6) / KARO_SIZE)))
-const MAX_ROWS = 60
-const MAX_ROWS_PHONE = 36 // a taller sheet is hard to reach on a phone
-const maxRows = () =>
-  typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 767px)').matches
-    ? MAX_ROWS_PHONE
-    : MAX_ROWS
+    : Math.min(MAX_ROWS, Math.max(MIN_ROWS, Math.ceil((window.innerHeight * SCREENS) / KARO_SIZE)))
 const INK_FALLBACK = '#1e3fbf' // Königsblau, light theme token
 const WRONG_FALLBACK = '#c2132d'
 const INK_EXPORT = '#1e3fbf' // always dark ink on white for the model, also in dark mode
 
 /**
  * Drawing surface for handwritten solutions (stylus, finger, mouse) on squared paper.
- * Pointer Events with `touch-action: none` (no scrolling while writing). Palm rejection: once a pen
- * has been seen, touch input is ignored. Undo/redo/clear via toolbar and Ctrl+Z / Ctrl+Y.
+ * Pointer Events with `touch-action: none` (no scrolling while writing). One finger/pen writes, two
+ * fingers scroll the page (the stroke in progress is discarded). Palm rejection: once a pen has
+ * been seen, one-finger touch is ignored. Undo/redo/clear via toolbar and Ctrl+Z / Ctrl+Y.
  */
 export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
   function HandwritingCanvas({ disabled = false, readOnly = false, onChange, marks }, ref) {
@@ -85,14 +81,21 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     const penSeen = useRef(false)
     const activePointer = useRef<number | null>(null) // the pointer that owns the current stroke
     const [tool, setTool] = useState<'pen' | 'eraser'>('pen')
-    const [minRows] = useState(defaultRows)
-    const [rows, setRows] = useState(minRows)
+    // Only grows (rotation, bigger window), so nothing written can ever be cut off and the
+    // mobile address bar showing/hiding does not make the sheet jump.
+    const [rows, setRows] = useState(rowsForScreen)
+    const touches = useRef(new Map<number, { x: number; y: number }>()) // active fingers
+    const gesture = useRef(false) // two-finger scroll in progress (until all fingers are up)
+    const lastCentre = useRef<{ x: number; y: number } | null>(null)
     const lastPlan = useRef<ExportPlan | null>(null) // crop of the last exported image (for marks)
     const [announcement, setAnnouncement] = useState('')
     const locked = disabled || readOnly
-    // shrinking must not cut off anything that was written
-    const lowestInk = strokes.reduce((m, s) => s.points.reduce((a, p) => Math.max(a, p.y), m), 0)
-    const canShrink = rows > minRows && lowestInk <= (rows - MORE_ROWS) * KARO_SIZE - 20
+
+    useEffect(() => {
+      const onResize = () => setRows((r) => Math.max(r, rowsForScreen()))
+      window.addEventListener('resize', onResize)
+      return () => window.removeEventListener('resize', onResize)
+    }, [])
 
     const strokesRef = useRef(strokes)
     useEffect(() => {
@@ -185,8 +188,33 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       return { x: ev.clientX - rect.left, y: ev.clientY - rect.top, pressure }
     }
 
+    const centre = () => {
+      const pts = [...touches.current.values()]
+      return {
+        x: pts.reduce((a, p) => a + p.x, 0) / pts.length,
+        y: pts.reduce((a, p) => a + p.y, 0) / pts.length,
+      }
+    }
+
     function onPointerDown(e: ReactPointerEvent<HTMLCanvasElement>) {
-      if (locked || !e.isPrimary) return
+      if (locked) return // touch-action: pan-y then: the browser scrolls natively
+      if (e.pointerType === 'touch') {
+        touches.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+        if (touches.current.size >= 2) {
+          // Second finger: this is a scroll gesture, not a stroke. Drop the touch stroke (never
+          // into the history); a pen stroke stays untouched (palm).
+          gesture.current = true
+          lastCentre.current = centre()
+          if (current.current && touches.current.has(activePointer.current ?? -1)) {
+            current.current = null
+            activePointer.current = null
+            redraw()
+          }
+          e.preventDefault()
+          return
+        }
+      }
+      if (!e.isPrimary || gesture.current) return
       if (e.pointerType === 'mouse' && e.button !== 0) return
       if (e.pointerType === 'pen') penSeen.current = true
       if (e.pointerType === 'touch' && penSeen.current) return // palm rejection
@@ -202,6 +230,17 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     }
 
     function onPointerMove(e: ReactPointerEvent<HTMLCanvasElement>) {
+      if (e.pointerType === 'touch' && touches.current.has(e.pointerId)) {
+        touches.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+        if (gesture.current) {
+          if (touches.current.size >= 2 && lastCentre.current) {
+            const c = centre()
+            window.scrollBy(0, lastCentre.current.y - c.y)
+            lastCentre.current = c
+          }
+          return // a remaining single finger after the gesture does not write
+        }
+      }
       const stroke = current.current
       if (!stroke || e.pointerId !== activePointer.current) return
       // Coalesced events give smooth lines with fast pens.
@@ -222,6 +261,10 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     }
 
     function onPointerUp(e: ReactPointerEvent<HTMLCanvasElement>) {
+      if (e.pointerType === 'touch' && touches.current.delete(e.pointerId)) {
+        if (touches.current.size === 0) gesture.current = false
+        lastCentre.current = touches.current.size >= 2 ? centre() : null
+      }
       const stroke = current.current
       if (!stroke || e.pointerId !== activePointer.current) return
       current.current = null
@@ -261,7 +304,16 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         <p id={hintId} className="sr-only">
           Schreib deinen Rechenweg mit Stift, Finger oder Maus auf das Karopapier. Rückgängig mit
           Strg+Z, Wiederholen mit Strg+Y. Zum Schreiben brauchst du einen Zeiger oder Touchscreen.
+          Auf Touchscreens schreibt ein Finger und zwei Finger scrollen die Seite.
         </p>
+        {!locked && (
+          <p
+            aria-hidden="true"
+            className="text-fine text-muted-foreground hidden px-4 pb-1 [@media(pointer:coarse)]:block"
+          >
+            Mit zwei Fingern scrollen.
+          </p>
+        )}
         <canvas
           ref={canvasRef}
           tabIndex={locked ? -1 : 0}
@@ -269,12 +321,14 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
           aria-label={readOnly ? 'Deine abgegebene Lösung' : 'Schreibfläche für deinen Lösungsweg'}
           aria-describedby={locked ? undefined : hintId}
           className={cn(
-            'grid-paper block w-full touch-none select-none',
+            // No own grid: the sheet around it (task + canvas) provides one continuous Karo pattern.
+            'block w-full select-none',
             !locked && (tool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair'),
             disabled && 'opacity-60',
           )}
           style={{
             height: rows * KARO_SIZE,
+            touchAction: locked ? 'pan-y' : 'none',
             WebkitTouchCallout: 'none',
             WebkitUserSelect: 'none',
           }}
@@ -290,11 +344,12 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
 
         {!readOnly && (
           <>
-            {/* On phones the toolbar sits at the bottom edge, within thumb reach. */}
+            {/* Phones: fixed at the bottom edge (thumb reach). Bigger screens: sticks to the bottom
+                of the viewport, so the long sheet never needs scrolling back to the tools. */}
             <div
               role="group"
               aria-label="Zeichenwerkzeuge"
-              className="bg-background flex flex-wrap items-center gap-1 border-t-2 p-2 max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-30 max-md:flex-nowrap max-md:justify-between max-md:px-3 max-md:pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+              className="bg-background flex flex-wrap items-center gap-1 border-t-2 p-2 max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-30 max-md:flex-nowrap max-md:justify-between max-md:px-3 max-md:pb-[max(0.5rem,env(safe-area-inset-bottom))] md:sticky md:bottom-0 md:z-10"
             >
               <ToolButton
                 label="Stift"
@@ -327,19 +382,6 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
                 icon={<Trash2 className="size-4" />}
                 onClick={() => act('clear')}
                 disabled={disabled || strokes.length === 0}
-              />
-              <ToolButton
-                label="Mehr Platz"
-                icon={<ChevronsDown className="size-4" />}
-                onClick={() => setRows((r) => Math.min(maxRows(), r + MORE_ROWS))}
-                disabled={disabled || rows >= maxRows()}
-                className="md:ml-auto"
-              />
-              <ToolButton
-                label="Weniger Platz"
-                icon={<ChevronsUp className="size-4" />}
-                onClick={() => setRows((r) => Math.max(minRows, r - MORE_ROWS))}
-                disabled={disabled || !canShrink}
               />
             </div>
           </>

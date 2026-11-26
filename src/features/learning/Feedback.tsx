@@ -39,6 +39,15 @@ const finalFallback = {
   missing: 'Ich finde kein Endergebnis. Schreib es zum Schluss deutlich auf.',
 } as const
 
+/** AI disclosure: stays visible wherever a handwritten solution was corrected. */
+function AiNote() {
+  return (
+    <p className="text-fine text-muted-foreground mt-3 font-sans font-normal">
+      Korrigiert von einer KI – sie kann sich irren.
+    </p>
+  )
+}
+
 /**
  * Compact correction of a handwritten solution: only what needs attention. Correct steps are not
  * listed; each wrong/unclear step gets one short note (its mistake is underlined in the drawing with
@@ -54,15 +63,18 @@ export function HandwritingNotes({
 }) {
   if (result.correct) {
     return (
-      <MarginNote status="correct" animate>
-        Stimmt!
-        {result.summary && (
-          <>
-            {' '}
-            <RichText text={result.summary} />
-          </>
-        )}
-      </MarginNote>
+      <>
+        <MarginNote status="correct" animate>
+          Stimmt!
+          {result.summary && (
+            <>
+              {' '}
+              <RichText text={result.summary} />
+            </>
+          )}
+        </MarginNote>
+        <AiNote />
+      </>
     )
   }
 
@@ -114,6 +126,7 @@ export function HandwritingNotes({
           </>
         )}
       </MarginNote>
+      <AiNote />
     </div>
   )
 }

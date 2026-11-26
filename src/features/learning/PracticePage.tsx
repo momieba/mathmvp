@@ -244,21 +244,31 @@ function ExerciseCard({
         : 'Lösung abgeben'
       : 'Prüfen'
 
+  // Task text; for handwriting it is the top of the sheet, so it sits tight on the squared paper.
+  const taskBlock = (
+    <section aria-labelledby="task-heading" className={cn(handwriting && 'px-4 py-3')}>
+      <h2 id="task-heading" className="text-fine text-muted-foreground font-sans font-normal">
+        Aufgabe, {difficultyLabels[exercise.difficulty]}
+      </h2>
+      <div className="text-prose measure mt-1">
+        <RichText text={exercise.prompt} />
+      </div>
+      {exercise.diagram && <DiagramView diagram={exercise.diagram} />}
+      {handwriting && !result && exercise.presentation.unit && (
+        <p className="text-fine text-muted-foreground mt-2">
+          Schreib dein Ergebnis zum Schluss mit der Einheit {exercise.presentation.unit} auf.
+        </p>
+      )}
+    </section>
+  )
+
   return (
     <form
       onSubmit={onSubmit}
       className={cn('flex flex-col gap-6', handwriting && !result && 'max-md:pb-20')}
     >
-      {/* Aufgabe */}
-      <section aria-labelledby="task-heading">
-        <h2 id="task-heading" className="text-fine text-muted-foreground font-sans font-normal">
-          Aufgabe, {difficultyLabels[exercise.difficulty]}
-        </h2>
-        <div className="text-prose measure mt-1">
-          <RichText text={exercise.prompt} />
-        </div>
-        {exercise.diagram && <DiagramView diagram={exercise.diagram} />}
-      </section>
+      {/* Aufgabe: bei Handschrift oben auf dem Blatt (s. u.), sonst frei über der Antwort */}
+      {!handwriting && taskBlock}
 
       {/* Auswahlaufgabe: nichts zu schreiben, darum kein Blatt. Rechenaufgaben löst du auf dem Blatt mit Rand. */}
       {choice ? (
@@ -311,7 +321,7 @@ function ExerciseCard({
           raised
           aria-label="Antwortbereich"
           margin={
-            <div role="status">
+            <div role="status" className={cn(handwriting && 'lg:sticky lg:top-4')}>
               {grade.isPending ? (
                 <PendingNote />
               ) : unreadable ? (
@@ -340,7 +350,7 @@ function ExerciseCard({
               }}
               className="gap-0"
             >
-              <div className="border-b p-2">
+              <div className="bg-background/60 border-b p-2">
                 <TabsList aria-label="Wie gibst du deine Lösung ab?" className="h-auto">
                   <TabsTrigger
                     value="drawing"
@@ -360,6 +370,7 @@ function ExerciseCard({
                   </TabsTrigger>
                 </TabsList>
               </div>
+              {taskBlock}
               {/* Both panels stay mounted so the drawing survives switching to the photo and back. */}
               <TabsContent value="drawing" keepMounted className="text-base">
                 <HandwritingCanvas
@@ -403,20 +414,6 @@ function ExerciseCard({
             </div>
           ) : null}
         </GridPaper>
-      )}
-
-      {handwriting && !result && (
-        <div className="text-fine text-muted-foreground -mt-3 space-y-1">
-          {exercise.presentation.unit && (
-            <p>
-              Schreib dein Ergebnis zum Schluss mit der Einheit {exercise.presentation.unit} auf.
-            </p>
-          )}
-          <p>
-            Eine KI korrigiert deine Lösung und kann sich irren. Das Bild wird nach der Korrektur
-            nicht gespeichert.
-          </p>
-        </div>
       )}
 
       {/* Hinweise */}

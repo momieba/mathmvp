@@ -112,21 +112,31 @@ export function ExamTask({
   }
   const canHandIn = (mode === 'photo' ? photo !== null : hasInk) && dirty && status !== 'grading'
 
+  const taskBlock = (
+    <div className={cn(handwriting && 'px-4 py-3')}>
+      <h2 id={`task-${exercise.id}`} className="text-h3">
+        Aufgabe {number}
+      </h2>
+      <div className="text-prose measure mt-1">
+        <RichText text={exercise.prompt} />
+      </div>
+      {exercise.diagram && <DiagramView diagram={exercise.diagram} />}
+      {handwriting && exercise.presentation.unit && (
+        <p className="text-fine text-muted-foreground mt-2">
+          Schreib dein Ergebnis zum Schluss mit der Einheit {exercise.presentation.unit} auf.
+        </p>
+      )}
+    </div>
+  )
+
   return (
     <section
       hidden={!active}
       aria-labelledby={`task-${exercise.id}`}
       className="flex flex-col gap-5"
     >
-      <div>
-        <h2 id={`task-${exercise.id}`} className="text-h3">
-          Aufgabe {number}
-        </h2>
-        <div className="text-prose measure mt-1">
-          <RichText text={exercise.prompt} />
-        </div>
-        {exercise.diagram && <DiagramView diagram={exercise.diagram} />}
-      </div>
+      {/* Handschrift: die Aufgabe steht oben auf dem Blatt (s. u.) */}
+      {!handwriting && taskBlock}
 
       {choice ? (
         <div>
@@ -171,7 +181,7 @@ export function ExamTask({
               onValueChange={(v) => setMode(v === 'photo' ? 'photo' : 'drawing')}
               className="gap-0"
             >
-              <div className="border-b p-2">
+              <div className="bg-background/60 border-b p-2">
                 <TabsList aria-label="Wie gibst du deine Lösung ab?" className="h-auto">
                   <TabsTrigger value="drawing" className="min-h-11 px-4">
                     <Pencil aria-hidden="true" />
@@ -183,6 +193,7 @@ export function ExamTask({
                   </TabsTrigger>
                 </TabsList>
               </div>
+              {taskBlock}
               <TabsContent value="drawing" keepMounted className="text-base">
                 <HandwritingCanvas
                   ref={canvasRef}
@@ -231,12 +242,6 @@ export function ExamTask({
             </div>
           ) : null}
         </GridPaper>
-      )}
-
-      {handwriting && exercise.presentation.unit && (
-        <p className="text-fine text-muted-foreground -mt-3">
-          Schreib dein Ergebnis zum Schluss mit der Einheit {exercise.presentation.unit} auf.
-        </p>
       )}
 
       <div role="status" className="empty:hidden">

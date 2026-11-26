@@ -60,7 +60,11 @@ const numeric: PracticeExercise = {
 }
 
 function renderPage() {
-  render(
+  return renderPageWithUnmount().unmount
+}
+
+function renderPageWithUnmount() {
+  return render(
     <QueryClientProvider client={new QueryClient()}>
       <MemoryRouter initialEntries={['/app/ueben/hypotenuse']}>
         <Routes>
@@ -113,8 +117,32 @@ describe('PracticePage with handwriting', () => {
     renderPage()
     expect(screen.getByTestId('canvas')).toBeInTheDocument()
     expect(screen.queryByLabelText('Deine Antwort')).not.toBeInTheDocument()
-    expect(screen.getByText(/Eine KI korrigiert deine Lösung/)).toBeInTheDocument()
+    expect(screen.queryByText(/Eine KI korrigiert deine Lösung/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Korrigiert von einer KI/)).not.toBeInTheDocument()
     expect(screen.getByText(/mit der Einheit cm/)).toBeInTheDocument()
+  })
+
+  it('puts the task on the sheet for handwriting, but not for multiple choice', () => {
+    const { unmount } = renderPageWithUnmount()
+    const sheet = screen.getByRole('region', { name: 'Antwortbereich' })
+    const task = screen.getByRole('heading', { name: /Aufgabe, leicht/ })
+    expect(sheet).toContainElement(task)
+    expect(sheet).toContainElement(screen.getByText(/mit der Einheit cm/))
+    expect(sheet).toContainElement(screen.getByTestId('canvas'))
+    unmount()
+
+    exercise = { ...numeric, type: 'multiple_choice', presentation: { options: ['3', '5'] } }
+    renderPage()
+    const area = screen.getByRole('region', { name: 'Antwortbereich' })
+    expect(area).not.toContainElement(screen.getByRole('heading', { name: /Aufgabe, leicht/ }))
+  })
+
+  it('discloses the AI correction only in the result', () => {
+    gradeState = { isPending: false, error: null, data: gradedResult }
+    renderPage()
+    const margin = within(screen.getByRole('region', { name: 'Antwortbereich' }))
+    expect(margin.getByText('Korrigiert von einer KI – sie kann sich irren.')).toBeInTheDocument()
+    expect(screen.queryByText(/nicht gespeichert/)).not.toBeInTheDocument()
   })
 
   it('keeps multiple choice as click selection', () => {
