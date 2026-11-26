@@ -380,7 +380,7 @@ function ToolButton({
   )
 }
 
-/** Teacher's correction: red wavy line under the mistake, step number at its right end. */
+/** Teacher's correction: red wavy line under the mistake, step number in a circle at its right end. */
 function drawMark(
   ctx: CanvasRenderingContext2D,
   u: { x0: number; x1: number; y: number },
@@ -403,9 +403,17 @@ function drawMark(
     ctx.quadraticCurveTo((x + nx) / 2, y + (up ? -amp : amp) * 2, nx, y)
   }
   ctx.stroke()
-  ctx.font = '600 15px "Recursive Variable", "Recursive", sans-serif'
+  // Step number in a circle (same look as the badge in the margin note).
+  const r = 10
+  const cx = u.x1 + 8 + r
+  ctx.lineWidth = 1.5
+  ctx.beginPath()
+  ctx.arc(cx, y, r, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.font = '600 13px "Recursive Variable", "Recursive", sans-serif'
+  ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText(String(label), u.x1 + 6, y)
+  ctx.fillText(String(label), cx, y + 0.5)
   ctx.restore()
 }
 

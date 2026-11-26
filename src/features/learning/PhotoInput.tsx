@@ -106,7 +106,7 @@ export function PhotoInput({ disabled = false, onChange, marks }: Props) {
             <span
               key={label}
               aria-hidden="true"
-              className="casual text-wrong absolute -translate-y-1/2 pl-1 text-base font-semibold"
+              className="casual text-wrong border-wrong absolute ml-2 grid size-5 -translate-y-1/2 place-items-center rounded-full border-[1.5px] text-xs leading-none font-semibold"
               style={{ left: `${xmax / 10}%`, top: `${Math.min(100, ymax / 10 + 0.8)}%` }}
             >
               {label}

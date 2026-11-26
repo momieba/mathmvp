@@ -6,7 +6,7 @@ import { StatusMark } from './StatusMark'
 /**
  * Correction in the margin, written like a teacher: status mark + short comment in Casual script.
  * `index` orders the draw-in animation top to bottom (`animate`, plays once, off for reduced motion).
- * `step` adds a "Schritt n" prefix – used for the list below the sheet on small screens.
+ * `step` adds the step number in a circle (same mark as next to the underline in the drawing).
  */
 export function MarginNote({
   status,
@@ -37,7 +37,17 @@ export function MarginNote({
       />
       {children !== undefined && (
         <p className={cn('casual text-ui min-w-0 pt-1 leading-snug', color)}>
-          {step !== undefined && <span className="font-normal">Schritt {step}: </span>}
+          {step !== undefined && (
+            <span className="font-normal">
+              <span
+                aria-hidden="true"
+                className="mr-1 inline-grid size-5 place-items-center rounded-full border-[1.5px] border-current align-middle text-xs leading-none font-semibold"
+              >
+                {step}
+              </span>
+              <span className="sr-only">Schritt {step}: </span>
+            </span>
+          )}
           {children}
         </p>
       )}
