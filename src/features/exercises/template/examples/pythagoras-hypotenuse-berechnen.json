@@ -260,7 +260,7 @@
           "Satz des Pythagoras (Hypotenuse $c$ liegt dem rechten Winkel gegenüber): $c^2 = a^2 + b^2$",
           "Einsetzen: $c^2 = {{a}}^2 + {{b}}^2 = {{a^2}} + {{b^2}} = {{c2}}$",
           "Wurzel ziehen: $c = \\sqrt{ {{c2}} } \\approx {{c:3}}$",
-          "Runden: $c \\approx {{cr:1}}\\,\\text{cm}$"
+          "Auf eine Nachkommastelle runden: $c \\approx {{cr:1}}\\,\\text{cm}$"
         ],
         "result": "$c \\approx {{cr:1}}\\,\\text{cm}$"
       },
