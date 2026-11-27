@@ -70,6 +70,7 @@ describe('coefficient helpers', () => {
     expect(texTimes(2, 3)).toBe('2 \\cdot 3')
     expect(texTimes(2, -3)).toBe('2 \\cdot (-3)')
     expect(texTimes(-2, 0.5)).toBe('-2 \\cdot 0{,}5')
+    expect(texTimes(-1, 0)).toBe('0')
   })
 
   it('texSignedTerm builds terms without "+ -" and "1x"', () => {

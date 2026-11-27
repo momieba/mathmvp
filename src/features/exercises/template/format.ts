@@ -61,7 +61,7 @@ export function texCoef(a: number) {
 export function texTimes(a: number, x: number) {
   const value = texParen(x)
   if (a === 1) return texNumber(x)
-  if (a === -1) return `-${value}`
+  if (a === -1) return x === 0 ? '0' : `-${value}`
   return `${texNumber(a)} \\cdot ${value}`
 }
 
